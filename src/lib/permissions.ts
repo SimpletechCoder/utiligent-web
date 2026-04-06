@@ -1,12 +1,16 @@
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Get the current user's permission flags from their profile
+ * Get the current user's effective permission flags.
+ *
+ * Resolution order:
+ * 1. Start with the flags granted by the user's permission profile
+ * 2. Apply per-user overrides (grant=true adds, grant=false removes)
+ * 3. Platform admins get all flags regardless
  */
 export async function getUserPermissions(): Promise<Set<string>> {
   const supabase = await createClient();
 
-  // Get current user
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -15,30 +19,62 @@ export async function getUserPermissions(): Promise<Set<string>> {
     return new Set();
   }
 
-  // Get user's organization membership and permission profile
+  // Check platform admin status — they get everything
+  const { data: platformAdmin } = await supabase
+    .from("platform_admins")
+    .select("is_active")
+    .eq("user_id", user.id)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (platformAdmin) {
+    // Fetch every flag in the system
+    const { data: allFlags } = await supabase
+      .from("permission_flags")
+      .select("id");
+    return new Set((allFlags ?? []).map((f: any) => f.id));
+  }
+
+  // Get membership with profile id
   const { data: membership } = await supabase
     .from("memberships")
-    .select("permission_profile_id")
+    .select("id, permission_profile_id")
     .eq("user_id", user.id)
     .limit(1)
     .single();
 
-  if (!membership || !membership.permission_profile_id) {
+  if (!membership) {
     return new Set<string>();
   }
 
-  // Get flags for this profile
-  const { data: flagRows } = await supabase
-    .from("permission_profile_flags")
-    .select("flag_id")
-    .eq("profile_id", membership.permission_profile_id);
+  // Step 1: Profile-based flags
+  const profileFlags = new Set<string>();
+  if (membership.permission_profile_id) {
+    const { data: flagRows } = await supabase
+      .from("permission_profile_flags")
+      .select("flag_id")
+      .eq("profile_id", membership.permission_profile_id);
 
-  if (!flagRows) {
-    return new Set<string>();
+    (flagRows ?? []).forEach((r: any) => profileFlags.add(r.flag_id));
   }
 
-  const flags = flagRows.map((pf: any) => pf.flag_id);
-  return new Set(flags);
+  // Step 2: Apply per-user overrides
+  const { data: overrides } = await supabase
+    .from("user_permission_overrides")
+    .select("flag_id, granted")
+    .eq("membership_id", membership.id);
+
+  const effectiveFlags = new Set(profileFlags);
+
+  (overrides ?? []).forEach((o: any) => {
+    if (o.granted) {
+      effectiveFlags.add(o.flag_id);
+    } else {
+      effectiveFlags.delete(o.flag_id);
+    }
+  });
+
+  return effectiveFlags;
 }
 
 /**

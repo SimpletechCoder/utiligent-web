@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { inviteUser } from "@/app/actions/users";
 
 interface UsersTabProps {
   orgId: string;
@@ -94,14 +95,23 @@ export function UsersTab({ orgId, permissions, isPlatformAdmin }: UsersTabProps)
     setInviting(true);
     setMessage(null);
     try {
-      // For now, create a membership record — in production, you'd send an invite email
-      // This is a simplified version that assumes the user already exists in auth
-      const supabase = createClient();
+      const result = await inviteUser(
+        inviteEmail,
+        inviteRole,
+        inviteProfile || null,
+        orgId
+      );
 
-      // Look up user by email via a simple approach
-      // In production, you'd use a server action with service role key
-      setMessage({ type: "error", text: "User invitations require a server-side action. Please use the Supabase dashboard to create the user first, then assign them here." });
-      setInviting(false);
+      if (!result.success) {
+        setMessage({ type: "error", text: result.error ?? "Failed to invite user" });
+      } else {
+        setMessage({ type: "success", text: `User ${inviteEmail} invited successfully.` });
+        setShowInvite(false);
+        setInviteEmail("");
+        setInviteRole("viewer");
+        setInviteProfile("");
+        fetchMembers();
+      }
       return;
     } catch (err: any) {
       setMessage({ type: "error", text: err.message });
