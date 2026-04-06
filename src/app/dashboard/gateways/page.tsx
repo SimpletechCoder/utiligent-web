@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { userHasPermission } from "@/lib/permissions";
 
 async function getGateways(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data, error } = await supabase
@@ -28,13 +30,20 @@ function timeAgo(dateStr: string | null): string {
 
 export default async function GatewaysPage() {
   const supabase = await createClient();
-  const gateways = await getGateways(supabase);
+  const [gateways, canAdd] = await Promise.all([
+    getGateways(supabase),
+    userHasPermission("gateway.add"),
+  ]);
 
   const statusStyles: Record<string, { dot: string; bg: string; text: string }> = {
     online: { dot: "bg-green-500", bg: "bg-green-50", text: "text-green-700" },
     offline: { dot: "bg-red-500", bg: "bg-red-50", text: "text-red-700" },
+    pending: { dot: "bg-yellow-500", bg: "bg-yellow-50", text: "text-yellow-700" },
     provisioned: { dot: "bg-blue-500", bg: "bg-blue-50", text: "text-blue-700" },
+    active: { dot: "bg-green-500", bg: "bg-green-50", text: "text-green-700" },
+    inactive: { dot: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-600" },
     revoked: { dot: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-600" },
+    archived: { dot: "bg-gray-300", bg: "bg-gray-50", text: "text-gray-500" },
   };
 
   return (
@@ -47,6 +56,17 @@ export default async function GatewaysPage() {
             {gateways.length} gateway{gateways.length !== 1 ? "s" : ""} configured
           </p>
         </div>
+        {canAdd && (
+          <Link
+            href="/dashboard/gateways/add"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Gateway
+          </Link>
+        )}
       </div>
 
       {gateways.length === 0 ? (
