@@ -17,22 +17,27 @@ export async function getUserPermissions(): Promise<Set<string>> {
 
   // Get user's organization membership and permission profile
   const { data: membership } = await supabase
-    .from("organization_memberships")
-    .select(
-      `
-    permission_profile_flags(flag_id)
-    `
-    )
+    .from("memberships")
+    .select("permission_profile_id")
     .eq("user_id", user.id)
+    .limit(1)
     .single();
 
-  if (!membership || !membership.permission_profile_flags) {
-    return new Set();
+  if (!membership || !membership.permission_profile_id) {
+    return new Set<string>();
   }
 
-  const flags = (membership.permission_profile_flags as any[]).map(
-    (pf) => pf.flag_id
-  );
+  // Get flags for this profile
+  const { data: flagRows } = await supabase
+    .from("permission_profile_flags")
+    .select("flag_id")
+    .eq("profile_id", membership.permission_profile_id);
+
+  if (!flagRows) {
+    return new Set<string>();
+  }
+
+  const flags = flagRows.map((pf: any) => pf.flag_id);
   return new Set(flags);
 }
 
