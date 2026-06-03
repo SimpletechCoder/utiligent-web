@@ -1,19 +1,118 @@
 @import "tailwindcss";
 
+/* ──────────────────────────────────────────────
+   LIGHT THEME (default)
+   ────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand — overridden by white-label branding */
+  --brand-primary: #2563eb;
+  --brand-primary-light: #dbeafe;
+  --brand-primary-dark: #1d4ed8;
+  --brand-accent: #7c3aed;
+  --brand-accent-light: #ede9fe;
+
+  /* Surfaces */
+  --bg-page: #f9fafb;
+  --bg-card: #ffffff;
+  --bg-sidebar: #ffffff;
+  --bg-input: #ffffff;
+  --bg-hover: #f3f4f6;
+
+  /* Borders */
+  --border-default: #e5e7eb;
+  --border-light: #f3f4f6;
+  --border-input: #d1d5db;
+
+  /* Text */
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --text-inverse: #ffffff;
+
+  /* Status */
+  --status-success: #16a34a;
+  --status-success-bg: #f0fdf4;
+  --status-warning: #d97706;
+  --status-warning-bg: #fffbeb;
+  --status-error: #dc2626;
+  --status-error-bg: #fef2f2;
+  --status-info: #2563eb;
+  --status-info-bg: #eff6ff;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
 
+/* ──────────────────────────────────────────────
+   DARK THEME
+   ────────────────────────────────────────────── */
+.dark {
+  --brand-primary: #3b82f6;
+  --brand-primary-light: #1e3a5f;
+  --brand-primary-dark: #60a5fa;
+  --brand-accent: #8b5cf6;
+  --brand-accent-light: #2d2150;
+
+  --bg-page: #0f1117;
+  --bg-card: #1a1d27;
+  --bg-sidebar: #141620;
+  --bg-input: #1e2130;
+  --bg-hover: #252837;
+
+  --border-default: #2d3041;
+  --border-light: #232636;
+  --border-input: #3d4155;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #0f172a;
+
+  --status-success: #22c55e;
+  --status-success-bg: #052e16;
+  --status-warning: #f59e0b;
+  --status-warning-bg: #451a03;
+  --status-error: #ef4444;
+  --status-error-bg: #450a0a;
+  --status-info: #3b82f6;
+  --status-info-bg: #172554;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+}
+
+/* ──────────────────────────────────────────────
+   THEME INLINE — bridge CSS vars into Tailwind
+   ────────────────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--bg-page);
+  --color-foreground: var(--text-primary);
+  --color-brand: var(--brand-primary);
+  --color-brand-light: var(--brand-primary-light);
+  --color-brand-dark: var(--brand-primary-dark);
+  --color-accent: var(--brand-accent);
+  --color-accent-light: var(--brand-accent-light);
+  --color-surface: var(--bg-card);
+  --color-surface-hover: var(--bg-hover);
+  --color-sidebar: var(--bg-sidebar);
+  --color-input-bg: var(--bg-input);
+  --color-border: var(--border-default);
+  --color-border-light: var(--border-light);
+  --color-border-input: var(--border-input);
+  --color-text: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: var(--text-inverse);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
+/* ──────────────────────────────────────────────
+   BASE STYLES
+   ────────────────────────────────────────────── */
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-page);
+  color: var(--text-primary);
   font-family: Arial, Helvetica, sans-serif;
 }

@@ -39,11 +39,11 @@ export function GatewayDetailClient({ gatewayId }: GatewayDetailClientProps) {
   if (showConfirm) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg p-6 max-w-sm">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <div className="bg-surface rounded-lg p-6 max-w-sm">
+          <h3 className="text-lg font-semibold text-text mb-2">
             Delete Gateway?
           </h3>
-          <p className="text-gray-600 text-sm mb-6">
+          <p className="text-text-secondary text-sm mb-6">
             This will archive the gateway. This action cannot be undone.
           </p>
 
@@ -57,7 +57,7 @@ export function GatewayDetailClient({ gatewayId }: GatewayDetailClientProps) {
             <button
               onClick={() => setShowConfirm(false)}
               disabled={loading}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="flex-1 px-4 py-2 border border-border rounded-lg text-sm font-medium text-text hover:bg-surface-hover disabled:opacity-50"
             >
               Cancel
             </button>

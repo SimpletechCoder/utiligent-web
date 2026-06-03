@@ -84,9 +84,9 @@ const statusStyles: Record<string, { dot: string; bg: string; text: string }> = 
   pending: { dot: "bg-yellow-500", bg: "bg-yellow-50", text: "text-yellow-700" },
   provisioned: { dot: "bg-blue-500", bg: "bg-blue-50", text: "text-blue-700" },
   active: { dot: "bg-green-500", bg: "bg-green-50", text: "text-green-700" },
-  inactive: { dot: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-600" },
-  revoked: { dot: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-600" },
-  archived: { dot: "bg-gray-300", bg: "bg-gray-50", text: "text-gray-500" },
+  inactive: { dot: "bg-gray-400", bg: "bg-surface-secondary", text: "text-text-secondary" },
+  revoked: { dot: "bg-gray-400", bg: "bg-surface-secondary", text: "text-text-secondary" },
+  archived: { dot: "bg-gray-300", bg: "bg-surface-secondary", text: "text-text-muted" },
 };
 
 export default async function GatewayDetailPage({
@@ -130,19 +130,19 @@ export default async function GatewayDetailPage({
         <div className="flex items-center gap-2 mb-2">
           <Link
             href="/dashboard/gateways"
-            className="text-blue-600 hover:text-blue-700"
+            className="text-brand hover:text-brand-dark"
           >
             Gateways
           </Link>
-          <span className="text-gray-400">/</span>
-          <span className="text-gray-600">{gateway.name}</span>
+          <span className="text-text-muted">/</span>
+          <span className="text-text-secondary">{gateway.name}</span>
         </div>
       </div>
 
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{gateway.name}</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-text">{gateway.name}</h1>
+          <p className="text-text-secondary mt-1">
             {gateway.serial_number}
           </p>
         </div>
@@ -152,7 +152,7 @@ export default async function GatewayDetailPage({
               {canEdit && (
                 <Link
                   href={`/dashboard/gateways/${id}/edit`}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="px-4 py-2 border border-border rounded-lg text-sm font-medium text-text hover:bg-surface-hover"
                 >
                   Edit
                 </Link>
@@ -179,74 +179,74 @@ export default async function GatewayDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Configuration */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="bg-surface rounded-xl border border-border p-6">
+            <h2 className="text-lg font-semibold text-text mb-4">
               Configuration
             </h2>
 
             <div className="space-y-4">
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-600">Serial Number</span>
-                <span className="font-mono text-sm text-gray-900">
+              <div className="flex justify-between py-3 border-b border-border-light">
+                <span className="text-text-secondary">Serial Number</span>
+                <span className="font-mono text-sm text-text">
                   {gateway.serial_number}
                 </span>
               </div>
 
               {siteData && (
-                <div className="flex justify-between py-3 border-b border-gray-100">
-                  <span className="text-gray-600">Site</span>
+                <div className="flex justify-between py-3 border-b border-border-light">
+                  <span className="text-text-secondary">Site</span>
                   <Link
                     href={`/dashboard/sites/${siteData.id}`}
-                    className="text-blue-600 hover:text-blue-700 font-medium"
+                    className="text-brand hover:text-brand-dark font-medium"
                   >
                     {siteData.name}
                   </Link>
                 </div>
               )}
 
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-600">Firmware Version</span>
-                <span className="font-mono text-sm text-gray-900">
+              <div className="flex justify-between py-3 border-b border-border-light">
+                <span className="text-text-secondary">Firmware Version</span>
+                <span className="font-mono text-sm text-text">
                   {gateway.firmware_version ?? "—"}
                 </span>
               </div>
 
               {profileData && (
-                <div className="flex justify-between py-3 border-b border-gray-100">
-                  <span className="text-gray-600">Profile</span>
-                  <span className="text-gray-900">
+                <div className="flex justify-between py-3 border-b border-border-light">
+                  <span className="text-text-secondary">Profile</span>
+                  <span className="text-text">
                     {profileData.display_name}
                   </span>
                 </div>
               )}
 
               {driverData && (
-                <div className="flex justify-between py-3 border-b border-gray-100">
-                  <span className="text-gray-600">Integration Driver</span>
-                  <span className="text-gray-900">
+                <div className="flex justify-between py-3 border-b border-border-light">
+                  <span className="text-text-secondary">Integration Driver</span>
+                  <span className="text-text">
                     {driverData.display_name}
                   </span>
                 </div>
               )}
 
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-600">Last Seen</span>
-                <span className="text-gray-900">
+              <div className="flex justify-between py-3 border-b border-border-light">
+                <span className="text-text-secondary">Last Seen</span>
+                <span className="text-text">
                   {timeAgo(gateway.last_seen_at)}
                 </span>
               </div>
 
-              <div className="flex justify-between py-3 border-b border-gray-100">
-                <span className="text-gray-600">Last Heartbeat</span>
-                <span className="text-gray-900">
+              <div className="flex justify-between py-3 border-b border-border-light">
+                <span className="text-text-secondary">Last Heartbeat</span>
+                <span className="text-text">
                   {timeAgo(gateway.last_heartbeat_at)}
                 </span>
               </div>
 
               {gateway.provisioned_at && (
                 <div className="flex justify-between py-3">
-                  <span className="text-gray-600">Provisioned At</span>
-                  <span className="text-gray-900">
+                  <span className="text-text-secondary">Provisioned At</span>
+                  <span className="text-text">
                     {new Date(gateway.provisioned_at).toLocaleString()}
                   </span>
                 </div>
@@ -257,22 +257,22 @@ export default async function GatewayDetailPage({
 
         {/* Quick info */}
         <div className="space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Ingest Details</h3>
+          <div className="bg-surface rounded-xl border border-border p-6">
+            <h3 className="font-semibold text-text mb-4">Ingest Details</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-text-secondary mb-1">
                   Ingest URL
                 </label>
                 <input
                   type="text"
                   readOnly
                   value="https://ehysifztspotxmmmkuyc.supabase.co/functions/v1/ingest"
-                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded text-xs font-mono text-gray-600"
+                  className="w-full px-3 py-2 bg-surface-secondary border border-border rounded text-xs font-mono text-text-secondary"
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">
+                <label className="block text-xs font-medium text-text-secondary mb-1">
                   API Key
                 </label>
                 <div className="flex gap-2">
@@ -280,9 +280,9 @@ export default async function GatewayDetailPage({
                     type="password"
                     readOnly
                     value={gateway.api_key || ""}
-                    className="flex-1 px-3 py-2 bg-gray-50 border border-gray-200 rounded text-xs font-mono text-gray-600"
+                    className="flex-1 px-3 py-2 bg-surface-secondary border border-border rounded text-xs font-mono text-text-secondary"
                   />
-                  <button className="px-3 py-2 bg-gray-100 hover:bg-gray-200 rounded text-xs font-medium text-gray-600">
+                  <button className="px-3 py-2 bg-surface-hover hover:bg-surface rounded text-xs font-medium text-text-secondary">
                     Copy
                   </button>
                 </div>
@@ -290,9 +290,9 @@ export default async function GatewayDetailPage({
             </div>
           </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Linked Meters</h3>
-            <p className="text-sm text-gray-600 mb-4">
+          <div className="bg-surface rounded-xl border border-border p-6">
+            <h3 className="font-semibold text-text mb-4">Linked Meters</h3>
+            <p className="text-sm text-text-secondary mb-4">
               {linkedMeters.length} meter{linkedMeters.length !== 1 ? "s" : ""}{" "}
               connected
             </p>
@@ -302,20 +302,20 @@ export default async function GatewayDetailPage({
                   <li key={meter.id}>
                     <Link
                       href={`/dashboard/meters/${meter.id}`}
-                      className="text-sm text-blue-600 hover:text-blue-700 truncate block"
+                      className="text-sm text-brand hover:text-brand-dark truncate block"
                     >
                       {meter.name || meter.serial_number}
                     </Link>
                   </li>
                 ))}
                 {linkedMeters.length > 5 && (
-                  <li className="text-xs text-gray-500 pt-2">
+                  <li className="text-xs text-text-secondary pt-2">
                     and {linkedMeters.length - 5} more...
                   </li>
                 )}
               </ul>
             ) : (
-              <p className="text-sm text-gray-500">No meters linked yet</p>
+              <p className="text-sm text-text-secondary">No meters linked yet</p>
             )}
           </div>
         </div>
@@ -323,27 +323,27 @@ export default async function GatewayDetailPage({
 
       {/* Setup Instructions */}
       {setupInstructions.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">
+        <div className="bg-surface rounded-xl border border-border p-6">
+          <h2 className="text-lg font-semibold text-text mb-6">
             Setup Instructions
           </h2>
           <div className="space-y-6">
             {setupInstructions
               .filter((i) => !i.is_advanced)
               .map((instruction) => (
-                <div key={instruction.step_number} className="pb-6 border-b border-gray-100 last:border-b-0">
+                <div key={instruction.step_number} className="pb-6 border-b border-border-light last:border-b-0">
                   <div className="flex gap-4">
                     <div className="flex-shrink-0">
-                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-600 font-semibold text-sm">
+                      <div className="flex items-center justify-center h-8 w-8 rounded-full bg-brand-light text-brand font-semibold text-sm">
                         {instruction.step_number}
                       </div>
                     </div>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 mb-2">
+                      <h3 className="font-semibold text-text mb-2">
                         {instruction.title}
                       </h3>
                       {instruction.image_url && (
-                        <div className="mb-3 rounded-lg overflow-hidden bg-gray-100">
+                        <div className="mb-3 rounded-lg overflow-hidden bg-surface-secondary">
                           <img
                             src={instruction.image_url}
                             alt={instruction.title}
@@ -351,7 +351,7 @@ export default async function GatewayDetailPage({
                           />
                         </div>
                       )}
-                      <div className="text-sm text-gray-600 prose prose-sm max-w-none">
+                      <div className="text-sm text-text-secondary prose prose-sm max-w-none">
                         {instruction.content}
                       </div>
                     </div>

@@ -306,7 +306,7 @@ export function ResellerTab() {
       case 'customer':
         return 'bg-green-100 text-green-800';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-surface-secondary text-text';
     }
   };
 
@@ -320,7 +320,7 @@ export function ResellerTab() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-500">Loading organizations...</div>
+        <div className="text-text-secondary">Loading organizations...</div>
       </div>
     );
   }
@@ -330,22 +330,22 @@ export function ResellerTab() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Reseller & White-Label Management</h2>
-          <p className="text-sm text-gray-600 mt-1">
+          <h2 className="text-2xl font-bold text-text">Reseller & White-Label Management</h2>
+          <p className="text-sm text-text-secondary mt-1">
             Manage reseller organizations and their permission capabilities
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={handleCreateReseller}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark transition-colors"
           >
             +
             Create Reseller
           </button>
           <button
             onClick={handleCreateCustomer}
-            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-border text-text rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
           >
             +
             Create Customer Org
@@ -369,37 +369,37 @@ export function ResellerTab() {
       )}
 
       {/* Organizations Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+      <div className="bg-surface border border-border rounded-lg overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-surface-secondary border-b border-border">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Slug</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Parent</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700">Users / Meters</th>
-              <th className="px-6 py-3 text-right text-xs font-semibold text-gray-700">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-text">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-text">Slug</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-text">Type</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-text">Parent</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-text">Status</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-text">Users / Meters</th>
+              <th className="px-6 py-3 text-right text-xs font-semibold text-text">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-border">
             {organizations.map((org) => (
               <React.Fragment key={org.id}>
-                <tr className="hover:bg-gray-50 cursor-pointer" onClick={() => handleExpandOrg(org.id)}>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{org.name}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{org.slug}</td>
+                <tr className="hover:bg-surface-hover cursor-pointer" onClick={() => handleExpandOrg(org.id)}>
+                  <td className="px-6 py-4 text-sm font-medium text-text">{org.name}</td>
+                  <td className="px-6 py-4 text-sm text-text-secondary">{org.slug}</td>
                   <td className="px-6 py-4 text-sm">
                     <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-medium ${getOrgTypeBadgeColor(org.org_type)}`}>
                       {org.org_type}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{getParentOrgName(org.parent_organization_id)}</td>
+                  <td className="px-6 py-4 text-sm text-text-secondary">{getParentOrgName(org.parent_organization_id)}</td>
                   <td className="px-6 py-4 text-sm">
                     <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                       {org.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
+                  <td className="px-6 py-4 text-sm text-text-secondary">
                     {org.max_users} / {org.max_meters}
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -408,7 +408,7 @@ export function ResellerTab() {
                         e.stopPropagation();
                         handleEditOrg(org);
                       }}
-                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      className="text-brand hover:text-brand-dark text-sm font-medium"
                     >
                       Edit
                     </button>
@@ -417,36 +417,36 @@ export function ResellerTab() {
 
                 {/* Expanded Row */}
                 {expandedOrgId === org.id && (
-                  <tr className="bg-gray-50 border-t-2 border-gray-100">
+                  <tr className="bg-surface-secondary border-t-2 border-border-light">
                     <td colSpan={7} className="px-6 py-4">
                       <div className="space-y-4">
                         {/* Organization Details */}
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <p className="text-xs font-semibold text-gray-700 uppercase">Billing Email</p>
-                            <p className="text-sm text-gray-900">{org.billing_email}</p>
+                            <p className="text-xs font-semibold text-text uppercase">Billing Email</p>
+                            <p className="text-sm text-text">{org.billing_email}</p>
                           </div>
                           <div>
-                            <p className="text-xs font-semibold text-gray-700 uppercase">Support Email</p>
-                            <p className="text-sm text-gray-900">{org.support_email}</p>
+                            <p className="text-xs font-semibold text-text uppercase">Support Email</p>
+                            <p className="text-sm text-text">{org.support_email}</p>
                           </div>
                           <div>
-                            <p className="text-xs font-semibold text-gray-700 uppercase">Max Child Orgs</p>
-                            <p className="text-sm text-gray-900">{org.max_child_orgs}</p>
+                            <p className="text-xs font-semibold text-text uppercase">Max Child Orgs</p>
+                            <p className="text-sm text-text">{org.max_child_orgs}</p>
                           </div>
                           <div>
-                            <p className="text-xs font-semibold text-gray-700 uppercase">Created</p>
-                            <p className="text-sm text-gray-900">{new Date(org.created_at).toLocaleDateString()}</p>
+                            <p className="text-xs font-semibold text-text uppercase">Created</p>
+                            <p className="text-sm text-text">{new Date(org.created_at).toLocaleDateString()}</p>
                           </div>
                         </div>
 
                         {/* Permission Caps (Reseller Only) */}
                         {org.org_type === 'reseller' && (
                           <div className="border-t pt-4">
-                            <h4 className="text-sm font-semibold text-gray-900 mb-3">Permission Caps</h4>
+                            <h4 className="text-sm font-semibold text-text mb-3">Permission Caps</h4>
                             <div className="space-y-2 max-h-60 overflow-y-auto">
                               {permissionFlags.length === 0 ? (
-                                <p className="text-sm text-gray-600">No permission flags available</p>
+                                <p className="text-sm text-text-secondary">No permission flags available</p>
                               ) : (
                                 permissionFlags.map((flag) => (
                                   <label key={flag.id} className="flex items-start gap-3 cursor-pointer">
@@ -454,12 +454,12 @@ export function ResellerTab() {
                                       type="checkbox"
                                       checked={selectedCapFlags.includes(flag.id)}
                                       onChange={() => toggleCapFlag(flag.id)}
-                                      className="mt-1 rounded border-gray-300"
+                                      className="mt-1 rounded border-border"
                                     />
                                     <div className="flex-1">
-                                      <p className="text-sm font-medium text-gray-900">{flag.display_name}</p>
-                                      <p className="text-xs text-gray-600">{flag.description}</p>
-                                      <p className="text-xs text-gray-500 mt-1">Category: {flag.category}</p>
+                                      <p className="text-sm font-medium text-text">{flag.display_name}</p>
+                                      <p className="text-xs text-text-secondary">{flag.description}</p>
+                                      <p className="text-xs text-text-muted mt-1">Category: {flag.category}</p>
                                     </div>
                                   </label>
                                 ))
@@ -468,7 +468,7 @@ export function ResellerTab() {
                             <button
                               onClick={() => handleSavePermissionCaps()}
                               disabled={savingCaps}
-                              className="mt-4 flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                              className="mt-4 flex items-center gap-2 px-4 py-2 bg-brand text-white text-sm font-medium rounded-lg hover:bg-brand-dark disabled:opacity-50"
                             >
                               {savingCaps ? 'Saving...' : 'Save Permission Caps'}
                             </button>
@@ -485,7 +485,7 @@ export function ResellerTab() {
 
         {organizations.length === 0 && (
           <div className="flex items-center justify-center py-12">
-            <div className="text-gray-500">No organizations found. Create one to get started.</div>
+            <div className="text-text-secondary">No organizations found. Create one to get started.</div>
           </div>
         )}
       </div>
@@ -493,8 +493,8 @@ export function ResellerTab() {
       {/* Create/Edit Organization Modal */}
       {formMode !== null && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl w-full max-w-2xl p-6 max-h-[80vh] overflow-y-auto">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">
+          <div className="bg-surface rounded-xl w-full max-w-2xl p-6 max-h-[80vh] overflow-y-auto">
+          <h3 className="text-lg font-bold text-text mb-4">
             {formMode === 'create-reseller' && 'Create Reseller Organization'}
             {formMode === 'create-customer' && 'Create Customer Organization'}
             {formMode === 'edit' && 'Edit Organization'}
@@ -503,24 +503,24 @@ export function ResellerTab() {
           <div className="space-y-4">
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
+              <label className="block text-sm font-medium text-text mb-1">Organization Name</label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                 placeholder="e.g., Acme Water Solutions"
               />
             </div>
 
             {/* Slug */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
+              <label className="block text-sm font-medium text-text mb-1">Slug</label>
               <input
                 type="text"
                 value={formData.slug}
                 onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                 placeholder="e.g., acme-water"
               />
             </div>
@@ -528,11 +528,11 @@ export function ResellerTab() {
             {/* Parent Organization (Customer Only) */}
             {formMode === 'create-customer' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Parent Reseller</label>
+                <label className="block text-sm font-medium text-text mb-1">Parent Reseller</label>
                 <select
                   value={formData.parent_organization_id}
                   onChange={(e) => setFormData({ ...formData, parent_organization_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                 >
                   <option value="">Select a reseller...</option>
                   {resellerOrgs.map((org) => (
@@ -546,24 +546,24 @@ export function ResellerTab() {
 
             {/* Billing Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Billing Email</label>
+              <label className="block text-sm font-medium text-text mb-1">Billing Email</label>
               <input
                 type="email"
                 value={formData.billing_email}
                 onChange={(e) => setFormData({ ...formData, billing_email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                 placeholder="billing@example.com"
               />
             </div>
 
             {/* Support Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Support Email</label>
+              <label className="block text-sm font-medium text-text mb-1">Support Email</label>
               <input
                 type="email"
                 value={formData.support_email}
                 onChange={(e) => setFormData({ ...formData, support_email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                 placeholder="support@example.com"
               />
             </div>
@@ -571,32 +571,32 @@ export function ResellerTab() {
             {/* Limits */}
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Child Orgs</label>
+                <label className="block text-sm font-medium text-text mb-1">Max Child Orgs</label>
                 <input
                   type="number"
                   value={formData.max_child_orgs}
                   onChange={(e) => setFormData({ ...formData, max_child_orgs: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                   min="0"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Users</label>
+                <label className="block text-sm font-medium text-text mb-1">Max Users</label>
                 <input
                   type="number"
                   value={formData.max_users}
                   onChange={(e) => setFormData({ ...formData, max_users: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                   min="0"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Max Meters</label>
+                <label className="block text-sm font-medium text-text mb-1">Max Meters</label>
                 <input
                   type="number"
                   value={formData.max_meters}
                   onChange={(e) => setFormData({ ...formData, max_meters: parseInt(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm"
                   min="0"
                 />
               </div>
@@ -604,15 +604,15 @@ export function ResellerTab() {
 
             {/* Branding JSON */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Branding (JSON)</label>
+              <label className="block text-sm font-medium text-text mb-1">Branding (JSON)</label>
               <textarea
                 value={formData.branding}
                 onChange={(e) => setFormData({ ...formData, branding: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono"
                 rows={4}
                 placeholder='{"logo_url": "https://...", "primary_color": "#000000"}'
               />
-              <p className="text-xs text-gray-500 mt-1">Optional: Include logo_url, primary_color, etc.</p>
+              <p className="text-xs text-text-secondary mt-1">Optional: Include logo_url, primary_color, etc.</p>
             </div>
           </div>
 
@@ -620,13 +620,13 @@ export function ResellerTab() {
           <div className="flex justify-end gap-2 mt-6">
             <button
               onClick={resetForm}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+              className="px-4 py-2 border border-border rounded-lg text-sm font-medium text-text hover:bg-surface-hover"
             >
               Cancel
             </button>
             <button
               onClick={handleSaveOrg}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark transition-colors"
             >
               Save Organization
             </button>

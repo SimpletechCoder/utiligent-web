@@ -6,8 +6,9 @@ import { UsersTab } from "./users-tab";
 import { PermissionProfilesTab } from "./permission-profiles-tab";
 import { GatewayProfilesTab } from "./gateway-profiles-tab";
 import { ResellerTab } from "./reseller-tab";
+import { BrandingTab } from "./branding-tab";
 
-type Tab = "general" | "users" | "permissions" | "gateways" | "reseller";
+type Tab = "general" | "users" | "permissions" | "gateways" | "branding" | "reseller";
 
 interface SettingsPanelProps {
   org: any;
@@ -58,6 +59,16 @@ const tabs: { id: Tab; label: string; icon: React.ReactNode; requiredFlag?: stri
     requiredFlag: "gateway.profile.manage",
   },
   {
+    id: "branding",
+    label: "Branding",
+    icon: (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+      </svg>
+    ),
+    requiredFlag: "settings.edit",
+  },
+  {
     id: "reseller",
     label: "Reseller",
     icon: (
@@ -83,12 +94,12 @@ export function SettingsPanel({ org, membership, user, permissions, isPlatformAd
     <div>
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-500 mt-1">Manage your organization, users, and platform configuration</p>
+        <h1 className="text-2xl font-bold text-text">Settings</h1>
+        <p className="text-text-secondary mt-1">Manage your organization, users, and platform configuration</p>
       </div>
 
       {/* Tab navigation */}
-      <div className="border-b border-gray-200 mb-6">
+      <div className="border-b border-border mb-6">
         <nav className="flex gap-1 -mb-px overflow-x-auto">
           {visibleTabs.map((tab) => (
             <button
@@ -96,11 +107,11 @@ export function SettingsPanel({ org, membership, user, permissions, isPlatformAd
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.id
-                  ? "border-blue-600 text-blue-600"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                  ? "border-brand text-brand"
+                  : "border-transparent text-text-secondary hover:text-text hover:border-border"
               }`}
             >
-              <span className={activeTab === tab.id ? "text-blue-600" : "text-gray-400"}>
+              <span className={activeTab === tab.id ? "text-brand" : "text-text-muted"}>
                 {tab.icon}
               </span>
               {tab.label}
@@ -122,6 +133,9 @@ export function SettingsPanel({ org, membership, user, permissions, isPlatformAd
         )}
         {activeTab === "gateways" && (
           <GatewayProfilesTab isPlatformAdmin={isPlatformAdmin} />
+        )}
+        {activeTab === "branding" && (
+          <BrandingTab orgId={org?.id} currentBranding={org?.branding} />
         )}
         {activeTab === "reseller" && (
           <ResellerTab />

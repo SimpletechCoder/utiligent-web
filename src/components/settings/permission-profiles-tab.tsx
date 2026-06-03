@@ -284,7 +284,7 @@ export function PermissionProfilesTab({
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-gray-500">Loading profiles...</div>
+        <div className="text-text-secondary">Loading profiles...</div>
       </div>
     );
   }
@@ -306,10 +306,10 @@ export function PermissionProfilesTab({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-text">
             Permission Profiles
           </h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-text-secondary">
             Manage user roles and permissions
           </p>
         </div>
@@ -318,7 +318,7 @@ export function PermissionProfilesTab({
             setShowCreateModal(true);
             setCreateFormData({ name: '', description: '', selectedFlags: new Set() });
           }}
-          className="flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-white hover:bg-brand-dark transition-colors"
         >
           +
           Create Profile
@@ -328,14 +328,14 @@ export function PermissionProfilesTab({
       {/* Profiles List */}
       <div className="space-y-3">
         {profiles.length === 0 ? (
-          <div className="rounded-md bg-gray-50 p-8 text-center text-gray-500">
+          <div className="rounded-md bg-surface-secondary p-8 text-center text-text-secondary">
             No profiles available
           </div>
         ) : (
           profiles.map((profile) => (
             <div
               key={profile.id}
-              className="rounded-lg border border-gray-200 bg-white hover:border-gray-300 transition-colors"
+              className="rounded-lg border border-border bg-surface hover:border-border transition-colors"
             >
               <div
                 className="flex items-center justify-between p-4 cursor-pointer"
@@ -347,7 +347,7 @@ export function PermissionProfilesTab({
               >
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
-                    <h4 className="text-base font-medium text-gray-900">
+                    <h4 className="text-base font-medium text-text">
                       {profile.name}
                     </h4>
                     {profile.is_system && (
@@ -355,12 +355,12 @@ export function PermissionProfilesTab({
                         System
                       </span>
                     )}
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-text-secondary">
                       {profile.flags.length} permissions
                     </span>
                   </div>
                   {profile.description && (
-                    <p className="mt-1 text-sm text-gray-600">
+                    <p className="mt-1 text-sm text-text-secondary">
                       {profile.description}
                     </p>
                   )}
@@ -375,7 +375,7 @@ export function PermissionProfilesTab({
                           setEditingProfile(profile);
                           setShowEditModal(true);
                         }}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                        className="p-2 text-text-muted hover:text-text hover:bg-surface-hover rounded transition-colors"
                         title="Edit profile"
                       >
                         Edit
@@ -385,7 +385,7 @@ export function PermissionProfilesTab({
                           e.stopPropagation();
                           handleDeleteProfile(profile);
                         }}
-                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                        className="p-2 text-text-muted hover:text-red-600 hover:bg-red-50 rounded transition-colors"
                         title="Delete profile"
                       >
                         Delete
@@ -393,7 +393,7 @@ export function PermissionProfilesTab({
                     </>
                   )}
 
-                  <span className="text-gray-400">
+                  <span className="text-text-muted">
                     {expandedProfile === profile.id ? '▲' : '▼'}
                   </span>
                 </div>
@@ -401,21 +401,21 @@ export function PermissionProfilesTab({
 
               {/* Expanded Flags View */}
               {expandedProfile === profile.id && (
-                <div className="border-t border-gray-200 bg-gray-50 p-4">
+                <div className="border-t border-border bg-surface-secondary p-4">
                   {profile.flags.length === 0 ? (
-                    <p className="text-sm text-gray-500">No permissions assigned</p>
+                    <p className="text-sm text-text-secondary">No permissions assigned</p>
                   ) : (
                     <div className="space-y-4">
                       {Object.entries(groupFlagsByCategory(profile.flags)).map(
                         ([category, categoryFlags]) => (
                           <div key={category}>
-                            <h5 className="text-xs font-semibold uppercase text-gray-700 mb-2">
+                            <h5 className="text-xs font-semibold uppercase text-text mb-2">
                               {category}
                             </h5>
                             <div className="space-y-2">
                               {categoryFlags.map((flag) => (
                                 <div key={flag.id} className="text-sm">
-                                  <div className="font-medium text-gray-900">
+                                  <div className="font-medium text-text">
                                     {flag.display_name}
                                     {flag.is_platform_only && (
                                       <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">
@@ -423,7 +423,7 @@ export function PermissionProfilesTab({
                                       </span>
                                     )}
                                   </div>
-                                  <div className="text-gray-600">
+                                  <div className="text-text-secondary">
                                     {flag.description}
                                   </div>
                                 </div>
@@ -445,7 +445,7 @@ export function PermissionProfilesTab({
       {showCreateModal && (
         <Modal onClose={() => setShowCreateModal(false)}>
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">Create Profile</h3>
+            <h3 className="text-lg font-semibold text-text">Create Profile</h3>
 
             <input
               type="text"
@@ -454,7 +454,7 @@ export function PermissionProfilesTab({
               onChange={(e) =>
                 setCreateFormData({ ...createFormData, name: e.target.value })
               }
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
             />
 
             <textarea
@@ -466,22 +466,22 @@ export function PermissionProfilesTab({
                   description: e.target.value,
                 })
               }
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
               rows={3}
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-3">
+              <label className="block text-sm font-medium text-text mb-3">
                 Permissions
               </label>
-              <div className="space-y-4 max-h-80 overflow-y-auto border border-gray-200 rounded-md p-4 bg-gray-50">
+              <div className="space-y-4 max-h-80 overflow-y-auto border border-border rounded-md p-4 bg-surface-secondary">
                 {Object.entries(
                   groupFlagsByCategory(
                     getVisibleFlags(allFlags)
                   )
                 ).map(([category, categoryFlags]) => (
                   <div key={category}>
-                    <h5 className="text-xs font-semibold uppercase text-gray-700 mb-2">
+                    <h5 className="text-xs font-semibold uppercase text-text mb-2">
                       {category}
                     </h5>
                     <div className="space-y-2 ml-2">
@@ -507,13 +507,13 @@ export function PermissionProfilesTab({
                                 selectedFlags: newFlags,
                               });
                             }}
-                            className="mt-1 rounded border-gray-300"
+                            className="mt-1 rounded border-border"
                           />
                           <div className="flex-1">
-                            <div className="text-sm font-medium text-gray-900">
+                            <div className="text-sm font-medium text-text">
                               {flag.display_name}
                             </div>
-                            <div className="text-xs text-gray-500">
+                            <div className="text-xs text-text-secondary">
                               {flag.description}
                             </div>
                           </div>
@@ -525,16 +525,16 @@ export function PermissionProfilesTab({
               </div>
             </div>
 
-            <div className="flex gap-2 justify-end pt-4 border-t border-gray-200">
+            <div className="flex gap-2 justify-end pt-4 border-t border-border">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                className="px-4 py-2 text-text hover:bg-surface-hover rounded-md transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleCreateProfile}
-                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md transition-colors"
+                className="px-4 py-2 bg-brand text-white hover:bg-brand-dark rounded-md transition-colors"
               >
                 Create
               </button>
@@ -547,7 +547,7 @@ export function PermissionProfilesTab({
       {showEditModal && editingProfile && (
         <Modal onClose={() => setShowEditModal(false)}>
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-text">
               Edit Profile: {editingProfile.name}
             </h3>
 
@@ -561,7 +561,7 @@ export function PermissionProfilesTab({
                   name: e.target.value,
                 })
               }
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
             />
 
             <textarea
@@ -573,22 +573,22 @@ export function PermissionProfilesTab({
                   description: e.target.value,
                 })
               }
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-md border border-border px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
               rows={3}
             />
 
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-3">
+              <label className="block text-sm font-medium text-text mb-3">
                 Permissions
               </label>
-              <div className="space-y-4 max-h-80 overflow-y-auto border border-gray-200 rounded-md p-4 bg-gray-50">
+              <div className="space-y-4 max-h-80 overflow-y-auto border border-border rounded-md p-4 bg-surface-secondary">
                 {Object.entries(
                   groupFlagsByCategory(
                     getVisibleFlags(allFlags)
                   )
                 ).map(([category, categoryFlags]) => (
                   <div key={category}>
-                    <h5 className="text-xs font-semibold uppercase text-gray-700 mb-2">
+                    <h5 className="text-xs font-semibold uppercase text-text mb-2">
                       {category}
                     </h5>
                     <div className="space-y-2 ml-2">
@@ -615,13 +615,13 @@ export function PermissionProfilesTab({
                                   flags: newFlags,
                                 });
                               }}
-                              className="mt-1 rounded border-gray-300"
+                              className="mt-1 rounded border-border"
                             />
                             <div className="flex-1">
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-text">
                                 {flag.display_name}
                               </div>
-                              <div className="text-xs text-gray-500">
+                              <div className="text-xs text-text-secondary">
                                 {flag.description}
                               </div>
                             </div>
@@ -634,16 +634,16 @@ export function PermissionProfilesTab({
               </div>
             </div>
 
-            <div className="flex gap-2 justify-end pt-4 border-t border-gray-200">
+            <div className="flex gap-2 justify-end pt-4 border-t border-border">
               <button
                 onClick={() => setShowEditModal(false)}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+                className="px-4 py-2 text-text hover:bg-surface-hover rounded-md transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleEditProfile}
-                className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-md transition-colors"
+                className="px-4 py-2 bg-brand text-white hover:bg-brand-dark rounded-md transition-colors"
               >
                 Save Changes
               </button>
@@ -670,23 +670,23 @@ function Modal({
       <div className="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         {/* Backdrop */}
         <div
-          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+          className="fixed inset-0 bg-text bg-opacity-75 transition-opacity"
           onClick={onClose}
           aria-hidden="true"
         />
 
         {/* Center modal */}
-        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="inline-block align-bottom bg-surface rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div className="flex items-center justify-between p-4 border-b border-border">
             <h3 className="text-lg font-semibold" />
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-text-muted hover:text-text"
             >
               ×
             </button>
           </div>
-          <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          <div className="bg-surface px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             {children}
           </div>
         </div>

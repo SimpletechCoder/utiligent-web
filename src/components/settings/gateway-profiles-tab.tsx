@@ -494,7 +494,7 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
           <span className="text-4xl block mb-4">⚠</span>
-          <p className="text-gray-700">You do not have permission to access this section.</p>
+          <p className="text-text-secondary">You do not have permission to access this section.</p>
         </div>
       </div>
     );
@@ -510,8 +510,8 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 rounded-full font-medium transition-colors ${
               activeTab === tab
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                ? 'bg-brand text-white'
+                : 'bg-surface-secondary text-text-secondary hover:bg-surface-hover'
             }`}
           >
             {tab === 'profiles' && 'Gateway Profiles'}
@@ -546,7 +546,7 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
                 setEditingProfile(null);
                 setShowProfileModal(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-lg hover:bg-brand-dark transition-colors"
             >
               +
               Add Profile
@@ -557,12 +557,12 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
             {profiles.map((profile) => (
               <div
                 key={profile.id}
-                className="border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow"
+                className="border border-border rounded-lg p-4 hover:shadow-lg transition-shadow bg-surface"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h4 className="font-semibold text-gray-900">{profile.display_name}</h4>
-                    <p className="text-sm text-gray-600">
+                    <h4 className="font-semibold text-text">{profile.display_name}</h4>
+                    <p className="text-sm text-text-secondary">
                       {profile.manufacturer} {profile.model}
                     </p>
                   </div>
@@ -585,14 +585,14 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
                   </span>
                 </div>
 
-                <p className="text-sm text-gray-600 mb-3">{profile.description}</p>
+                <p className="text-sm text-text-secondary mb-3">{profile.description}</p>
 
                 <div className="space-y-2 mb-4 text-sm">
-                  <p className="text-gray-700">
+                  <p className="text-text">
                     <span className="font-medium">Protocol:</span> {profile.protocol}
                   </p>
                   {profile.supported_frequency_bands.length > 0 && (
-                    <p className="text-gray-700">
+                    <p className="text-text">
                       <span className="font-medium">Bands:</span>{' '}
                       {profile.supported_frequency_bands.join(', ')}
                     </p>
@@ -602,7 +602,7 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
                 <div className="flex gap-2">
                   <button
                     onClick={() => openEditProfile(profile)}
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 bg-surface-secondary text-text-secondary rounded hover:bg-surface-hover transition-colors"
                   >
                     Edit
                   </button>
@@ -628,7 +628,7 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
           </div>
 
           {profiles.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-text-secondary">
               <p>No gateway profiles yet. Create one to get started.</p>
             </div>
           )}
@@ -646,7 +646,7 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
                 setEditingDriver(null);
                 setShowDriverModal(true);
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-lg hover:bg-brand-dark transition-colors"
             >
               +
               Add Driver
@@ -655,35 +655,35 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-surface-secondary border-b border-border">
                 <tr>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-900">Name</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-900">Protocol</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-900">Decoder Type</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-900">Version</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-900">Active</th>
-                  <th className="px-4 py-3 text-left font-semibold text-gray-900">Actions</th>
+                  <th className="px-4 py-3 text-left font-semibold text-text">Name</th>
+                  <th className="px-4 py-3 text-left font-semibold text-text">Protocol</th>
+                  <th className="px-4 py-3 text-left font-semibold text-text">Decoder Type</th>
+                  <th className="px-4 py-3 text-left font-semibold text-text">Version</th>
+                  <th className="px-4 py-3 text-left font-semibold text-text">Active</th>
+                  <th className="px-4 py-3 text-left font-semibold text-text">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-border">
                 {drivers.map((driver) => (
-                  <tr key={driver.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-gray-900">
+                  <tr key={driver.id} className="hover:bg-surface-hover">
+                    <td className="px-4 py-3 text-text">
                       <div>
                         <p className="font-medium">{driver.display_name}</p>
-                        <p className="text-gray-600 text-xs">{driver.name}</p>
+                        <p className="text-text-secondary text-xs">{driver.name}</p>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-gray-700">{driver.protocol}</td>
-                    <td className="px-4 py-3 text-gray-700">{driver.decoder_type}</td>
-                    <td className="px-4 py-3 text-gray-700">{driver.version}</td>
+                    <td className="px-4 py-3 text-text-secondary">{driver.protocol}</td>
+                    <td className="px-4 py-3 text-text-secondary">{driver.decoder_type}</td>
+                    <td className="px-4 py-3 text-text-secondary">{driver.version}</td>
                     <td className="px-4 py-3">
                       <button
                         onClick={() => handleToggleDriver(driver)}
                         className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                           driver.is_active
                             ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                            : 'bg-surface-secondary text-text hover:bg-surface-hover'
                         }`}
                       >
                         {driver.is_active ? 'Active' : 'Inactive'}
@@ -692,7 +692,7 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
                     <td className="px-4 py-3">
                       <button
                         onClick={() => openEditDriver(driver)}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
+                        className="text-brand hover:text-brand-dark font-medium"
                       >
                         Edit
                       </button>
@@ -704,7 +704,7 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
           </div>
 
           {drivers.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-text-secondary">
               <p>No integration drivers yet. Create one to get started.</p>
             </div>
           )}
@@ -715,11 +715,11 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
       {activeTab === 'instructions' && (
         <div className="space-y-4">
           <div className="flex items-center gap-4">
-            <label className="font-medium text-gray-700">Select Gateway Profile:</label>
+            <label className="font-medium text-text">Select Gateway Profile:</label>
             <select
               value={selectedProfileId}
               onChange={(e) => setSelectedProfileId(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand bg-surface text-text"
             >
               <option value="">-- Select a profile --</option>
               {profiles.map((profile) => (
@@ -740,7 +740,7 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
                     setEditingInstruction(null);
                     setShowInstructionModal(true);
                   }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-lg hover:bg-brand-dark transition-colors"
                 >
                   +
                   Add Step
@@ -752,15 +752,15 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
                   instructions.map((instruction) => (
                     <div
                       key={instruction.id}
-                      className="border border-gray-200 rounded-lg p-4 hover:shadow transition-shadow"
+                      className="border border-border rounded-lg p-4 hover:shadow transition-shadow bg-surface"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className="inline-block w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                            <span className="inline-block w-8 h-8 bg-brand-light text-brand rounded-full flex items-center justify-center text-sm font-semibold">
                               {instruction.step_number}
                             </span>
-                            <h4 className="font-semibold text-gray-900">{instruction.title}</h4>
+                            <h4 className="font-semibold text-text">{instruction.title}</h4>
                             {instruction.is_advanced && (
                               <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
                                 Advanced
@@ -771,7 +771,7 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
                         <div className="flex gap-2">
                           <button
                             onClick={() => openEditInstruction(instruction)}
-                            className="text-blue-600 hover:text-blue-800"
+                            className="text-brand hover:text-brand-dark"
                           >
                             Edit
                           </button>
@@ -783,13 +783,13 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
                           </button>
                         </div>
                       </div>
-                      <p className="text-gray-700 text-sm whitespace-pre-wrap line-clamp-3">
+                      <p className="text-text-secondary text-sm whitespace-pre-wrap line-clamp-3">
                         {instruction.content}
                       </p>
                     </div>
                   ))
                 ) : (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-text-secondary">
                     <p>No setup instructions for this profile yet.</p>
                   </div>
                 )}
@@ -798,7 +798,7 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
           )}
 
           {!selectedProfileId && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-text-secondary">
               <p>Select a gateway profile to view and manage setup instructions.</p>
             </div>
           )}
@@ -1019,12 +1019,12 @@ function Modal({
 }: ModalProps) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className={`bg-white rounded-lg shadow-lg max-w-${size === 'lg' ? '2xl' : 'md'} w-full`}>
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
+      <div className={`bg-surface rounded-lg shadow-lg max-w-${size === 'lg' ? '2xl' : 'md'} w-full`}>
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <h2 className="text-lg font-semibold text-text">{title}</h2>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-text-secondary hover:text-text transition-colors"
           >
             ×
           </button>
@@ -1032,17 +1032,17 @@ function Modal({
 
         <div className="p-6 overflow-y-auto max-h-[calc(100vh-12rem)]">{children}</div>
 
-        <div className="flex gap-3 justify-end p-6 border-t border-gray-200">
+        <div className="flex gap-3 justify-end p-6 border-t border-border">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+            className="px-4 py-2 text-text-secondary bg-surface-secondary rounded-lg hover:bg-surface-hover transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onSubmit}
             disabled={isLoading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-brand text-white rounded-lg hover:bg-brand-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? 'Saving...' : 'Save'}
           </button>
@@ -1072,13 +1072,13 @@ function FormField({
 }: FormFieldProps) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-text mb-1">{label}</label>
       {isTextarea ? (
         <textarea
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand font-mono text-sm bg-surface text-text"
           rows={4}
         />
       ) : (
@@ -1087,7 +1087,7 @@ function FormField({
           value={value}
           onChange={onChange}
           placeholder={placeholder}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand bg-surface text-text"
         />
       )}
     </div>
@@ -1104,11 +1104,11 @@ interface FormSelectProps {
 function FormSelect({ label, value, onChange, options }: FormSelectProps) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-text mb-1">{label}</label>
       <select
         value={value}
         onChange={onChange}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-brand bg-surface text-text"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -1133,9 +1133,9 @@ function FormCheckbox({ label, checked, onChange }: FormCheckboxProps) {
         type="checkbox"
         checked={checked}
         onChange={onChange}
-        className="w-4 h-4 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-4 h-4 border border-border rounded focus:outline-none focus:ring-2 focus:ring-brand"
       />
-      <label className="text-sm font-medium text-gray-700">{label}</label>
+      <label className="text-sm font-medium text-text">{label}</label>
     </div>
   );
 }

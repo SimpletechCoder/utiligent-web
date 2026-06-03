@@ -41,9 +41,9 @@ export default async function GatewaysPage() {
     pending: { dot: "bg-yellow-500", bg: "bg-yellow-50", text: "text-yellow-700" },
     provisioned: { dot: "bg-blue-500", bg: "bg-blue-50", text: "text-blue-700" },
     active: { dot: "bg-green-500", bg: "bg-green-50", text: "text-green-700" },
-    inactive: { dot: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-600" },
-    revoked: { dot: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-600" },
-    archived: { dot: "bg-gray-300", bg: "bg-gray-50", text: "text-gray-500" },
+    inactive: { dot: "bg-gray-400", bg: "bg-surface-secondary", text: "text-text-secondary" },
+    revoked: { dot: "bg-gray-400", bg: "bg-surface-secondary", text: "text-text-secondary" },
+    archived: { dot: "bg-gray-300", bg: "bg-surface-secondary", text: "text-text-muted" },
   };
 
   return (
@@ -51,15 +51,15 @@ export default async function GatewaysPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gateways</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-text">Gateways</h1>
+          <p className="text-text-secondary mt-1">
             {gateways.length} gateway{gateways.length !== 1 ? "s" : ""} configured
           </p>
         </div>
         {canAdd && (
           <Link
             href="/dashboard/gateways/add"
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-brand text-white rounded-lg font-medium hover:bg-brand-dark focus:ring-2 focus:ring-brand focus:ring-offset-2 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -70,14 +70,14 @@ export default async function GatewaysPage() {
       </div>
 
       {gateways.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 px-6 py-16 text-center">
+        <div className="bg-surface rounded-xl border border-border px-6 py-16 text-center">
           <div className="w-12 h-12 rounded-full bg-green-50 text-green-500 flex items-center justify-center mx-auto mb-4">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-1">No gateways yet</h3>
-          <p className="text-gray-500 max-w-sm mx-auto">
+          <h3 className="text-lg font-semibold text-text mb-1">No gateways yet</h3>
+          <p className="text-text-secondary max-w-sm mx-auto">
             Gateways will appear here once provisioned. Configure your Milesight UG56 to connect to the Utiligent ingest endpoint.
           </p>
         </div>
@@ -88,13 +88,13 @@ export default async function GatewaysPage() {
             return (
               <div
                 key={gw.id}
-                className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow"
+                className="bg-surface rounded-xl border border-border p-6 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="font-semibold text-gray-900">{gw.name || gw.serial_number}</h3>
+                    <h3 className="font-semibold text-text">{gw.name || gw.serial_number}</h3>
                     {gw.name && (
-                      <p className="text-xs text-gray-400 mt-0.5">{gw.serial_number}</p>
+                      <p className="text-xs text-text-muted mt-0.5">{gw.serial_number}</p>
                     )}
                   </div>
                   <span
@@ -107,25 +107,25 @@ export default async function GatewaysPage() {
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Site</span>
-                    <span className="text-gray-900">{gw.sites?.name ?? "Unassigned"}</span>
+                    <span className="text-text-secondary">Site</span>
+                    <span className="text-text">{gw.sites?.name ?? "Unassigned"}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Firmware</span>
-                    <span className="text-gray-900 font-mono text-xs">{gw.firmware_version ?? "—"}</span>
+                    <span className="text-text-secondary">Firmware</span>
+                    <span className="text-text font-mono text-xs">{gw.firmware_version ?? "—"}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Last seen</span>
-                    <span className="text-gray-900">{timeAgo(gw.last_seen_at)}</span>
+                    <span className="text-text-secondary">Last seen</span>
+                    <span className="text-text">{timeAgo(gw.last_seen_at)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Heartbeat</span>
-                    <span className="text-gray-900">{timeAgo(gw.last_heartbeat_at)}</span>
+                    <span className="text-text-secondary">Heartbeat</span>
+                    <span className="text-text">{timeAgo(gw.last_heartbeat_at)}</span>
                   </div>
                   {gw.provisioned_at && (
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Provisioned</span>
-                      <span className="text-gray-900">
+                      <span className="text-text-secondary">Provisioned</span>
+                      <span className="text-text">
                         {new Date(gw.provisioned_at).toLocaleDateString()}
                       </span>
                     </div>

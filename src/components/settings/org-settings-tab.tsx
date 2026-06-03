@@ -58,13 +58,13 @@ export function OrgSettingsTab({ org, membership, user, permissions }: OrgSettin
       )}
 
       {/* Organization details */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Organization</h2>
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
+        <div className="px-6 py-4 border-b border-border-light flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-text">Organization</h2>
           {canEdit && !editing && (
             <button
               onClick={() => setEditing(true)}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+              className="text-sm text-brand hover:text-brand-dark font-medium"
             >
               Edit
             </button>
@@ -74,32 +74,32 @@ export function OrgSettingsTab({ org, membership, user, permissions }: OrgSettin
           {editing ? (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
+                <label className="block text-sm font-medium text-text mb-1">Organization Name</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-border-input rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Billing Email</label>
+                  <label className="block text-sm font-medium text-text mb-1">Billing Email</label>
                   <input
                     type="email"
                     value={form.billing_email}
                     onChange={(e) => setForm({ ...form, billing_email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-border-input rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand"
                     placeholder="billing@example.com"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Support Email</label>
+                  <label className="block text-sm font-medium text-text mb-1">Support Email</label>
                   <input
                     type="email"
                     value={form.support_email}
                     onChange={(e) => setForm({ ...form, support_email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-border-input rounded-lg text-sm focus:ring-2 focus:ring-brand focus:border-brand"
                     placeholder="support@example.com"
                   />
                 </div>
@@ -108,13 +108,13 @@ export function OrgSettingsTab({ org, membership, user, permissions }: OrgSettin
                 <button
                   onClick={handleSave}
                   disabled={saving}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50 transition-colors"
                 >
                   {saving ? "Saving..." : "Save Changes"}
                 </button>
                 <button
                   onClick={() => { setEditing(false); setForm({ name: org?.name ?? "", billing_email: org?.billing_email ?? "", support_email: org?.support_email ?? "" }); }}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 border border-border text-text rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
                 >
                   Cancel
                 </button>
@@ -124,20 +124,20 @@ export function OrgSettingsTab({ org, membership, user, permissions }: OrgSettin
             <>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Name</label>
-                  <p className="mt-1 text-sm text-gray-900">{org?.name ?? "—"}</p>
+                  <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Name</label>
+                  <p className="mt-1 text-sm text-text">{org?.name ?? "—"}</p>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Slug</label>
-                  <p className="mt-1 text-sm text-gray-900 font-mono">{org?.slug ?? "—"}</p>
+                  <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Slug</label>
+                  <p className="mt-1 text-sm text-text font-mono">{org?.slug ?? "—"}</p>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Status</label>
+                  <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Status</label>
                   <p className="mt-1">
                     <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      org?.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-50 text-gray-600"
+                      org?.status === "active" ? "bg-green-50 text-green-700" : "bg-surface-hover text-text-secondary"
                     }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${org?.status === "active" ? "bg-green-500" : "bg-gray-400"}`} />
+                      <span className={`w-1.5 h-1.5 rounded-full ${org?.status === "active" ? "bg-green-500" : "bg-text-muted"}`} />
                       <span className="capitalize">{org?.status ?? "—"}</span>
                     </span>
                   </p>
@@ -145,26 +145,26 @@ export function OrgSettingsTab({ org, membership, user, permissions }: OrgSettin
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Billing Email</label>
-                  <p className="mt-1 text-sm text-gray-900">{org?.billing_email ?? "Not set"}</p>
+                  <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Billing Email</label>
+                  <p className="mt-1 text-sm text-text">{org?.billing_email ?? "Not set"}</p>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Support Email</label>
-                  <p className="mt-1 text-sm text-gray-900">{org?.support_email ?? "Not set"}</p>
+                  <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Support Email</label>
+                  <p className="mt-1 text-sm text-text">{org?.support_email ?? "Not set"}</p>
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</label>
-                  <p className="mt-1 text-sm text-gray-900 capitalize">{org?.plan ?? "—"}</p>
+                  <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Plan</label>
+                  <p className="mt-1 text-sm text-text capitalize">{org?.plan ?? "—"}</p>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Type</label>
-                  <p className="mt-1 text-sm text-gray-900 capitalize">{org?.org_type ?? "—"}</p>
+                  <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Type</label>
+                  <p className="mt-1 text-sm text-text capitalize">{org?.org_type ?? "—"}</p>
                 </div>
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Created</label>
-                  <p className="mt-1 text-sm text-gray-900">{org?.created_at ? new Date(org.created_at).toLocaleDateString() : "—"}</p>
+                  <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Created</label>
+                  <p className="mt-1 text-sm text-text">{org?.created_at ? new Date(org.created_at).toLocaleDateString() : "—"}</p>
                 </div>
               </div>
             </>
@@ -173,54 +173,54 @@ export function OrgSettingsTab({ org, membership, user, permissions }: OrgSettin
       </div>
 
       {/* Account info */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Your Account</h2>
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
+        <div className="px-6 py-4 border-b border-border-light">
+          <h2 className="text-lg font-semibold text-text">Your Account</h2>
         </div>
         <div className="px-6 py-5 space-y-4">
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Email</label>
-              <p className="mt-1 text-sm text-gray-900">{user?.email ?? "—"}</p>
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Email</label>
+              <p className="mt-1 text-sm text-text">{user?.email ?? "—"}</p>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Role</label>
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Role</label>
               <p className="mt-1">
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 capitalize">
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-light text-brand-dark capitalize">
                   {membership?.role?.replace("_", " ") ?? "—"}
                 </span>
               </p>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Permission Profile</label>
-              <p className="mt-1 text-sm text-gray-900">{membership?.permission_profiles?.name ?? "—"}</p>
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Permission Profile</label>
+              <p className="mt-1 text-sm text-text">{membership?.permission_profiles?.name ?? "—"}</p>
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</label>
-            <p className="mt-1 text-xs text-gray-400 font-mono">{user?.id ?? "—"}</p>
+            <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">User ID</label>
+            <p className="mt-1 text-xs text-text-muted font-mono">{user?.id ?? "—"}</p>
           </div>
         </div>
       </div>
 
       {/* Org limits (read-only) */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Limits</h2>
+      <div className="bg-surface rounded-xl border border-border overflow-hidden">
+        <div className="px-6 py-4 border-b border-border-light">
+          <h2 className="text-lg font-semibold text-text">Limits</h2>
         </div>
         <div className="px-6 py-5">
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Max Users</label>
-              <p className="mt-1 text-sm text-gray-900">{org?.max_users ?? "Unlimited"}</p>
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Max Users</label>
+              <p className="mt-1 text-sm text-text">{org?.max_users ?? "Unlimited"}</p>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Max Meters</label>
-              <p className="mt-1 text-sm text-gray-900">{org?.max_meters ?? "Unlimited"}</p>
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Max Meters</label>
+              <p className="mt-1 text-sm text-text">{org?.max_meters ?? "Unlimited"}</p>
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-500 uppercase tracking-wider">Max Child Orgs</label>
-              <p className="mt-1 text-sm text-gray-900">{org?.max_child_orgs ?? "Unlimited"}</p>
+              <label className="text-xs font-medium text-text-secondary uppercase tracking-wider">Max Child Orgs</label>
+              <p className="mt-1 text-sm text-text">{org?.max_child_orgs ?? "Unlimited"}</p>
             </div>
           </div>
         </div>

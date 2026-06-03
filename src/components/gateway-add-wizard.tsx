@@ -111,10 +111,10 @@ export function GatewayAddWizard({
       return (
         <div className="space-y-6">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            <h2 className="text-xl font-semibold text-text mb-2">
               Select Gateway Profile
             </h2>
-            <p className="text-gray-500">
+            <p className="text-text-secondary">
               Choose from approved gateway profiles to get started with guided setup.
             </p>
           </div>
@@ -130,10 +130,10 @@ export function GatewayAddWizard({
               <button
                 key={profile.id}
                 onClick={() => handleProfileSelect(profile.id)}
-                className="text-left bg-white border-2 border-gray-200 rounded-xl p-6 hover:border-blue-400 hover:shadow-md transition-all"
+                className="text-left bg-surface border-2 border-border rounded-xl p-6 hover:border-blue-400 hover:shadow-md transition-all"
               >
                 {profile.image_url && (
-                  <div className="mb-4 h-32 bg-gray-100 rounded-lg overflow-hidden">
+                  <div className="mb-4 h-32 bg-surface-hover rounded-lg overflow-hidden">
                     <img
                       src={profile.image_url}
                       alt={profile.display_name}
@@ -141,13 +141,13 @@ export function GatewayAddWizard({
                     />
                   </div>
                 )}
-                <h3 className="font-semibold text-gray-900">
+                <h3 className="font-semibold text-text">
                   {profile.display_name}
                 </h3>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-text-secondary mt-1">
                   {profile.manufacturer} {profile.model}
                 </p>
-                <p className="text-sm text-gray-600 mt-3">{profile.description}</p>
+                <p className="text-sm text-text-secondary mt-3">{profile.description}</p>
               </button>
             ))}
           </div>
@@ -155,7 +155,7 @@ export function GatewayAddWizard({
           <div className="pt-4 flex gap-3">
             <button
               onClick={() => setMode("advanced")}
-              className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+              className="text-brand hover:text-brand-dark font-medium text-sm"
             >
               Switch to Advanced Mode
             </button>
@@ -174,7 +174,7 @@ export function GatewayAddWizard({
           </p>
           <button
             onClick={() => setSelectedProfile(null)}
-            className="text-blue-600 hover:text-blue-700 font-medium text-sm mt-3"
+            className="text-brand hover:text-brand-dark font-medium text-sm mt-3"
           >
             Back to profiles
           </button>
@@ -189,23 +189,23 @@ export function GatewayAddWizard({
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-text">
               Step {currentStep + 1} of {visibleInstructions.length}
             </h2>
-            <p className="text-gray-500 mt-1">{instruction.title}</p>
+            <p className="text-text-secondary mt-1">{instruction.title}</p>
           </div>
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="text-xs text-gray-500 hover:text-gray-700 underline"
+            className="text-xs text-text-secondary hover:text-text underline"
           >
             {showAdvanced ? "Hide" : "Show"} advanced steps
           </button>
         </div>
 
         {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-1">
+        <div className="w-full bg-border rounded-full h-1">
           <div
-            className="bg-blue-600 h-1 rounded-full transition-all"
+            className="bg-brand h-1 rounded-full transition-all"
             style={{
               width: `${((currentStep + 1) / visibleInstructions.length) * 100}%`,
             }}
@@ -213,7 +213,7 @@ export function GatewayAddWizard({
         </div>
 
         {instruction.image_url && (
-          <div className="bg-gray-100 rounded-lg overflow-hidden">
+          <div className="bg-surface-hover rounded-lg overflow-hidden">
             <img
               src={instruction.image_url}
               alt={instruction.title}
@@ -222,35 +222,35 @@ export function GatewayAddWizard({
           </div>
         )}
 
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="prose prose-sm max-w-none text-gray-700">
+        <div className="bg-surface border border-border rounded-lg p-6">
+          <div className="prose prose-sm max-w-none text-text">
             {instruction.content}
           </div>
         </div>
 
         {/* Ingest URL and API Key */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
-          <p className="text-sm font-medium text-blue-900">Configuration Details</p>
+        <div className="bg-brand-light border border-brand rounded-lg p-4 space-y-3">
+          <p className="text-sm font-medium text-brand">Configuration Details</p>
           <div>
-            <label className="block text-xs text-blue-800 font-medium mb-1">
+            <label className="block text-xs text-brand font-medium mb-1">
               Ingest URL
             </label>
             <input
               type="text"
               readOnly
               value="https://ehysifztspotxmmmkuyc.supabase.co/functions/v1/ingest"
-              className="w-full px-3 py-2 bg-white border border-blue-200 rounded text-sm font-mono text-gray-700"
+              className="w-full px-3 py-2 bg-surface border border-brand rounded text-sm font-mono text-text"
             />
           </div>
           <div>
-            <label className="block text-xs text-blue-800 font-medium mb-1">
+            <label className="block text-xs text-brand font-medium mb-1">
               API Key
             </label>
             <input
               type="text"
               readOnly
               value={apiKey}
-              className="w-full px-3 py-2 bg-white border border-blue-200 rounded text-sm font-mono text-gray-700"
+              className="w-full px-3 py-2 bg-surface border border-brand rounded text-sm font-mono text-text"
             />
           </div>
         </div>
@@ -261,14 +261,14 @@ export function GatewayAddWizard({
               setCurrentStep(Math.max(0, currentStep - 1))
             }
             disabled={currentStep === 0}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-border rounded-lg text-sm font-medium text-text hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Previous
           </button>
           {currentStep < visibleInstructions.length - 1 ? (
             <button
               onClick={() => setCurrentStep(currentStep + 1)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+              className="px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark"
             >
               Next
             </button>
@@ -285,7 +285,7 @@ export function GatewayAddWizard({
 
         <button
           onClick={() => setSelectedProfile(null)}
-          className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+          className="text-brand hover:text-brand-dark font-medium text-sm"
         >
           Back to profiles
         </button>
@@ -297,10 +297,10 @@ export function GatewayAddWizard({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
+        <h2 className="text-xl font-semibold text-text mb-2">
           Advanced Gateway Setup
         </h2>
-        <p className="text-gray-500">
+        <p className="text-text-secondary">
           Enter all gateway details manually.
         </p>
       </div>
@@ -311,34 +311,34 @@ export function GatewayAddWizard({
         </div>
       )}
 
-      <div className="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+      <div className="bg-surface border border-border rounded-lg p-6 space-y-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-text mb-1">
             Gateway Name
           </label>
           <input
             type="text"
             placeholder="e.g., Main Building Gateway"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900"
+            className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-text"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-text mb-1">
             Serial Number
           </label>
           <input
             type="text"
             placeholder="e.g., UG56-12345678"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900"
+            className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-text"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-text mb-1">
             Site
           </label>
-          <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900">
+          <select className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-text">
             <option value="">Select a site</option>
             {sites.map((site) => (
               <option key={site.id} value={site.id}>
@@ -349,10 +349,10 @@ export function GatewayAddWizard({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-text mb-1">
             Gateway Profile
           </label>
-          <select className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900">
+          <select className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-text">
             <option value="">Select a profile</option>
             {profiles.map((profile) => (
               <option key={profile.id} value={profile.id}>
@@ -363,13 +363,13 @@ export function GatewayAddWizard({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-text mb-1">
             Firmware Version
           </label>
           <input
             type="text"
             placeholder="e.g., 1.0.0"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900"
+            className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-text"
           />
         </div>
       </div>
@@ -377,13 +377,13 @@ export function GatewayAddWizard({
       <div className="flex gap-3">
         <button
           onClick={() => setMode("guided")}
-          className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="px-4 py-2 border border-border rounded-lg text-sm font-medium text-text hover:bg-surface-hover"
         >
           Back to Guided Mode
         </button>
         <button
           disabled={loading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Creating..." : "Create Gateway"}
         </button>

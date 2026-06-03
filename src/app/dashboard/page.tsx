@@ -121,10 +121,10 @@ export default async function DashboardPage() {
   ];
 
   const colorMap: Record<string, { bg: string; text: string; icon: string }> = {
-    blue: { bg: "bg-blue-50", text: "text-blue-700", icon: "text-blue-500" },
+    blue: { bg: "bg-brand-light", text: "text-brand-dark", icon: "text-blue-500" },
     green: { bg: "bg-green-50", text: "text-green-700", icon: "text-green-500" },
     red: { bg: "bg-red-50", text: "text-red-700", icon: "text-red-500" },
-    gray: { bg: "bg-gray-50", text: "text-gray-700", icon: "text-gray-400" },
+    gray: { bg: "bg-background", text: "text-text", icon: "text-text-muted" },
     purple: { bg: "bg-purple-50", text: "text-purple-700", icon: "text-purple-500" },
     indigo: { bg: "bg-indigo-50", text: "text-indigo-700", icon: "text-indigo-500" },
   };
@@ -141,17 +141,17 @@ export default async function DashboardPage() {
       {/* Header */}
       <div className="mb-8 flex items-end justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500 mt-1">{stats.orgName}</p>
+          <h1 className="text-2xl font-bold text-text">Dashboard</h1>
+          <p className="text-text-secondary mt-1">{stats.orgName}</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 capitalize">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-brand-light text-brand-dark capitalize">
             {stats.orgPlan}
           </span>
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
-            stats.orgStatus === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-600"
+            stats.orgStatus === "active" ? "bg-green-50 text-green-700" : "bg-surface-hover text-text-secondary"
           }`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${stats.orgStatus === "active" ? "bg-green-500" : "bg-gray-400"}`} />
+            <span className={`w-1.5 h-1.5 rounded-full ${stats.orgStatus === "active" ? "bg-green-500" : "bg-text-muted"}`} />
             <span className="capitalize">{stats.orgStatus}</span>
           </span>
         </div>
@@ -165,7 +165,7 @@ export default async function DashboardPage() {
             <Link
               key={card.label}
               href={card.href}
-              className="bg-white rounded-xl border border-gray-200 p-5 flex items-center gap-4 hover:border-gray-300 hover:shadow-sm transition-all"
+              className="bg-surface rounded-xl border border-border p-5 flex items-center gap-4 hover:border-border hover:shadow-sm transition-all"
             >
               <div
                 className={`w-11 h-11 rounded-lg ${colors.bg} ${colors.icon} flex items-center justify-center flex-shrink-0`}
@@ -173,7 +173,7 @@ export default async function DashboardPage() {
                 {card.icon}
               </div>
               <div>
-                <p className="text-xs text-gray-500">{card.label}</p>
+                <p className="text-xs text-text-secondary">{card.label}</p>
                 <p className={`text-xl font-bold ${colors.text}`}>
                   {card.value}
                 </p>
@@ -185,22 +185,22 @@ export default async function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent alerts */}
-        <div className="bg-white rounded-xl border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Alerts</h2>
-            <Link href="/dashboard/alerts" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+        <div className="bg-surface rounded-xl border border-border">
+          <div className="px-6 py-4 border-b border-border-light flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-text">Recent Alerts</h2>
+            <Link href="/dashboard/alerts" className="text-sm text-brand hover:text-brand-dark font-medium">
               View all
             </Link>
           </div>
           {recentAlerts.length === 0 ? (
-            <div className="px-6 py-12 text-center text-gray-400">
-              <svg className="w-8 h-8 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="px-6 py-12 text-center text-text-muted">
+              <svg className="w-8 h-8 mx-auto mb-2 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               No alerts. All systems nominal.
             </div>
           ) : (
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-border-light">
               {recentAlerts.map((alert) => (
                 <div
                   key={alert.id}
@@ -209,14 +209,14 @@ export default async function DashboardPage() {
                   <div className="flex items-center gap-3 min-w-0">
                     <span
                       className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
-                        severityColors[alert.severity] ?? "bg-gray-100 text-gray-800"
+                        severityColors[alert.severity] ?? "bg-surface-hover text-text"
                       }`}
                     >
                       {alert.severity}
                     </span>
-                    <span className="text-sm text-gray-700 truncate">{alert.message}</span>
+                    <span className="text-sm text-text truncate">{alert.message}</span>
                   </div>
-                  <span className="text-xs text-gray-400 flex-shrink-0 ml-4">
+                  <span className="text-xs text-text-muted flex-shrink-0 ml-4">
                     {new Date(alert.triggered_at).toLocaleString()}
                   </span>
                 </div>
@@ -226,34 +226,34 @@ export default async function DashboardPage() {
         </div>
 
         {/* Recent activity */}
-        <div className="bg-white rounded-xl border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Activity</h2>
-            <Link href="/dashboard/audit" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
+        <div className="bg-surface rounded-xl border border-border">
+          <div className="px-6 py-4 border-b border-border-light flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-text">Recent Activity</h2>
+            <Link href="/dashboard/audit" className="text-sm text-brand hover:text-brand-dark font-medium">
               Audit log
             </Link>
           </div>
           {recentAudit.length === 0 ? (
-            <div className="px-6 py-12 text-center text-gray-400">
-              <svg className="w-8 h-8 mx-auto mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="px-6 py-12 text-center text-text-muted">
+              <svg className="w-8 h-8 mx-auto mb-2 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               No activity recorded yet.
             </div>
           ) : (
-            <div className="divide-y divide-gray-50">
+            <div className="divide-y divide-border-light">
               {recentAudit.map((entry) => (
                 <div
                   key={entry.id}
                   className="px-6 py-3 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 flex-shrink-0">
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-surface-hover text-text flex-shrink-0">
                       {entry.entity_type}
                     </span>
-                    <span className="text-sm text-gray-700 capitalize">{entry.action}</span>
+                    <span className="text-sm text-text capitalize">{entry.action}</span>
                   </div>
-                  <span className="text-xs text-gray-400 flex-shrink-0 ml-4">
+                  <span className="text-xs text-text-muted flex-shrink-0 ml-4">
                     {new Date(entry.created_at).toLocaleString()}
                   </span>
                 </div>
@@ -264,12 +264,12 @@ export default async function DashboardPage() {
       </div>
 
       {/* Quick actions */}
-      <div className="mt-6 bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+      <div className="mt-6 bg-surface rounded-xl border border-border p-6">
+        <h2 className="text-lg font-semibold text-text mb-4">Quick Actions</h2>
         <div className="flex flex-wrap gap-3">
           <Link
             href="/dashboard/gateways/add"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -278,7 +278,7 @@ export default async function DashboardPage() {
           </Link>
           <Link
             href="/dashboard/settings"
-            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-border text-text rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
@@ -287,7 +287,7 @@ export default async function DashboardPage() {
           </Link>
           <Link
             href="/dashboard/billing"
-            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 border border-border text-text rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />

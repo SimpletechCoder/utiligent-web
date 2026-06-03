@@ -39,9 +39,9 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-surface">
         <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-lg p-8 text-center">
+          <div className="bg-surface rounded-2xl shadow-lg p-8 text-center border border-border">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-green-100 text-green-600 mb-4">
               <svg
                 className="w-6 h-6"
@@ -57,17 +57,17 @@ export default function SignupPage() {
                 />
               </svg>
             </div>
-            <h2 className="text-xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl font-bold text-text mb-2">
               Check your email
             </h2>
-            <p className="text-gray-500">
+            <p className="text-text-secondary">
               We&apos;ve sent a confirmation link to{" "}
-              <span className="font-medium text-gray-700">{email}</span>. Click
+              <span className="font-medium text-text">{email}</span>. Click
               the link to activate your account.
             </p>
             <Link
               href="/login"
-              className="inline-block mt-6 text-blue-600 hover:text-blue-700 font-medium text-sm"
+              className="inline-block mt-6 text-brand hover:text-brand-dark font-medium text-sm"
             >
               Back to sign in
             </Link>
@@ -78,17 +78,17 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center bg-surface">
       <div className="w-full max-w-md">
-        <div className="bg-white rounded-2xl shadow-lg p-8">
+        <div className="bg-surface rounded-2xl shadow-lg p-8 border border-border">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-600 text-white text-xl font-bold mb-4">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-brand text-white text-xl font-bold mb-4">
               U
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-text">
               Create account
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-text-secondary mt-1">
               Get started with Utiligent
             </p>
           </div>
@@ -103,7 +103,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="fullName"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-text mb-1"
               >
                 Full name
               </label>
@@ -113,7 +113,7 @@ export default function SignupPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900"
+                className="w-full px-4 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none transition-colors text-text bg-surface-secondary"
                 placeholder="Your full name"
               />
             </div>
@@ -121,7 +121,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-text mb-1"
               >
                 Email
               </label>
@@ -131,7 +131,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900"
+                className="w-full px-4 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none transition-colors text-text bg-surface-secondary"
                 placeholder="you@example.com"
               />
             </div>
@@ -139,7 +139,7 @@ export default function SignupPage() {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-text mb-1"
               >
                 Password
               </label>
@@ -150,7 +150,7 @@ export default function SignupPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900"
+                className="w-full px-4 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none transition-colors text-text bg-surface-secondary"
                 placeholder="Min. 8 characters"
               />
             </div>
@@ -158,17 +158,17 @@ export default function SignupPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-brand text-white py-2.5 rounded-lg font-medium hover:bg-brand-dark focus:ring-2 focus:ring-brand focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? "Creating account..." : "Create account"}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="text-center text-sm text-text-secondary mt-6">
             Already have an account?{" "}
             <Link
               href="/login"
-              className="text-blue-600 hover:text-blue-700 font-medium"
+              className="text-brand hover:text-brand-dark font-medium"
             >
               Sign in
             </Link>

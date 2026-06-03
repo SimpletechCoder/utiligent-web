@@ -65,22 +65,22 @@ export default async function AddGatewayPage() {
           <div className="flex items-center gap-2 mb-2">
             <Link
               href="/dashboard/gateways"
-              className="text-blue-600 hover:text-blue-700"
+              className="text-brand hover:text-brand-dark"
             >
               Gateways
             </Link>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-600">Add</span>
+            <span className="text-border-light">/</span>
+            <span className="text-text-secondary">Add</span>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900">Add Gateway</h1>
-          <p className="text-gray-500 mt-1">
+          <h1 className="text-2xl font-bold text-text">Add Gateway</h1>
+          <p className="text-text-muted mt-1">
             Set up a new gateway to manage meters and collect data
           </p>
         </div>
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-xl border border-gray-200 p-8">
+      <div className="bg-surface rounded-xl border border-border p-8">
         {profiles.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-12 h-12 rounded-full bg-yellow-50 text-yellow-500 flex items-center justify-center mx-auto mb-4">
@@ -98,15 +98,15 @@ export default async function AddGatewayPage() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">
+            <h3 className="text-lg font-semibold text-text mb-1">
               No gateway profiles available
             </h3>
-            <p className="text-gray-500 max-w-sm mx-auto">
+            <p className="text-text-muted max-w-sm mx-auto">
               Gateway profiles must be set up before you can add gateways.
             </p>
             <Link
               href="/dashboard/gateways"
-              className="text-blue-600 hover:text-blue-700 font-medium text-sm mt-4"
+              className="text-brand hover:text-brand-dark font-medium text-sm mt-4"
             >
               Back to Gateways
             </Link>
