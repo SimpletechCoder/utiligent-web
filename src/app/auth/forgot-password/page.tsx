@@ -16,15 +16,13 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    // Fire the reset. We intentionally do NOT surface a per-email error state:
+    // showing "no account for this email" would let an attacker enumerate
+    // which addresses are registered. Always land on the same neutral success
+    // screen. (Rate limiting is enforced by Supabase Auth.)
+    await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
     });
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
 
     setSuccess(true);
     setLoading(false);

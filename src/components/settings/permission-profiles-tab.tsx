@@ -189,33 +189,24 @@ export function PermissionProfilesTab({
 
       if (updateError) throw updateError;
 
-      // Get current flag associations
-      const currentFlagIds = new Set(editingProfile.flags.map((f) => f.id));
-      const newFlagIds = new Set(editingProfile.flags.map((f) => f.id));
+      // Re-sync flag associations. `editingProfile.flags` already reflects the
+      // desired end state (the modal mutates it as the admin toggles flags), so
+      // we replace the whole set: delete all existing rows, then insert the
+      // desired ones. The previous diff compared editingProfile.flags against
+      // itself, so flag removals never persisted.
+      const { error: deleteError } = await supabase
+        .from('permission_profile_flags')
+        .delete()
+        .eq('profile_id', editingProfile.id);
 
-      // Delete removed flags
-      const flagsToDelete = Array.from(currentFlagIds).filter(
-        (f) => !newFlagIds.has(f)
-      );
-      if (flagsToDelete.length > 0) {
-        const { error: deleteError } = await supabase
-          .from('permission_profile_flags')
-          .delete()
-          .eq('profile_id', editingProfile.id)
-          .in('flag_id', flagsToDelete);
+      if (deleteError) throw deleteError;
 
-        if (deleteError) throw deleteError;
-      }
-
-      // Add new flags
-      const flagsToAdd = Array.from(newFlagIds).filter(
-        (f) => !currentFlagIds.has(f)
-      );
-      if (flagsToAdd.length > 0) {
+      const desiredFlagIds = editingProfile.flags.map((f) => f.id);
+      if (desiredFlagIds.length > 0) {
         const { error: insertError } = await supabase
           .from('permission_profile_flags')
           .insert(
-            flagsToAdd.map((flagId) => ({
+            desiredFlagIds.map((flagId) => ({
               profile_id: editingProfile.id,
               flag_id: flagId,
             }))

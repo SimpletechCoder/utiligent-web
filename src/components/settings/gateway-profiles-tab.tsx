@@ -250,11 +250,14 @@ export function GatewayProfilesTab({ isPlatformAdmin }: GatewayProfilesTabProps)
     try {
       setLoading(true);
       const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       const newApprovedStatus = !profile.is_approved;
       const payload = newApprovedStatus
         ? {
             is_approved: true,
-            approved_by: 'current-user-id', // In real app, get from auth context
+            approved_by: user?.id ?? null,
             approved_at: new Date().toISOString(),
           }
         : {

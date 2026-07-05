@@ -1,11 +1,52 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { userHasPermission } from "@/lib/permissions";
 
 interface InviteUserResult {
   success: boolean;
   error?: string;
   userId?: string | null;
+}
+
+/**
+ * Authorize a management action against a specific organization.
+ *
+ * Because these actions can use the service-role key (which bypasses RLS),
+ * they MUST self-authorize. We require the caller to (1) be authenticated,
+ * (2) hold the given permission flag, and (3) have an active membership in the
+ * target organization. Returns the caller's user id on success.
+ */
+async function authorizeOrgAction(
+  organizationId: string,
+  flag: string
+): Promise<{ ok: true; userId: string } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const hasFlag = await userHasPermission(flag);
+  if (!hasFlag) {
+    return { ok: false, error: "You do not have permission to perform this action" };
+  }
+
+  // Confirm the caller actually belongs to the org they are acting on.
+  const { data: membership } = await supabase
+    .from("memberships")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("organization_id", organizationId)
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (!membership) {
+    return { ok: false, error: "You are not a member of this organization" };
+  }
+
+  return { ok: true, userId: user.id };
 }
 
 /**
@@ -34,15 +75,16 @@ export async function inviteUser(
       return { success: false, error: "Organization ID is required" };
     }
 
-    // Check caller permissions
-    const supabase = await createClient();
-    const {
-      data: { user: caller },
-    } = await supabase.auth.getUser();
-
-    if (!caller) {
-      return { success: false, error: "Not authenticated" };
+    // Authorize: caller must hold `user.invite` AND be an active member of the
+    // target org. This is the real access-control boundary for the
+    // service-role user-creation below (which bypasses RLS).
+    const auth = await authorizeOrgAction(organizationId, "user.invite");
+    if (!auth.ok) {
+      return { success: false, error: auth.error };
     }
+    const caller = { id: auth.userId };
+
+    const supabase = await createClient();
 
     // Check service role key availability
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -186,6 +228,19 @@ export async function updateMember(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createClient();
+
+    // Resolve the target membership's org, then authorize against it.
+    const { data: target } = await supabase
+      .from("memberships")
+      .select("organization_id")
+      .eq("id", membershipId)
+      .maybeSingle();
+
+    if (!target) return { success: false, error: "Membership not found" };
+
+    const auth = await authorizeOrgAction(target.organization_id, "user.edit");
+    if (!auth.ok) return { success: false, error: auth.error };
+
     const { error } = await supabase
       .from("memberships")
       .update({
@@ -209,6 +264,18 @@ export async function removeMember(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const supabase = await createClient();
+
+    const { data: target } = await supabase
+      .from("memberships")
+      .select("organization_id")
+      .eq("id", membershipId)
+      .maybeSingle();
+
+    if (!target) return { success: false, error: "Membership not found" };
+
+    const auth = await authorizeOrgAction(target.organization_id, "user.remove");
+    if (!auth.ok) return { success: false, error: auth.error };
+
     const { error } = await supabase
       .from("memberships")
       .update({ status: "inactive" })

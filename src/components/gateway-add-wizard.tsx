@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { createGateway } from "@/app/actions/gateways";
 
 interface GatewayProfile {
   id: string;
@@ -42,12 +43,14 @@ export function GatewayAddWizard({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The API key is minted server-side and returned exactly once on creation.
+  const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
 
-  // Generate API key on the fly
-  const generateApiKey = () => {
-    return "sk_" + Math.random().toString(36).substring(2, 15) +
-           Math.random().toString(36).substring(2, 15);
-  };
+  // Advanced-mode form fields (controlled)
+  const [advName, setAdvName] = useState("");
+  const [advSerial, setAdvSerial] = useState("");
+  const [advSite, setAdvSite] = useState("");
+  const [advProfile, setAdvProfile] = useState("");
 
   // Load instructions when profile is selected
   const handleProfileSelect = async (profileId: string) => {
@@ -80,30 +83,111 @@ export function GatewayAddWizard({
     setLoading(true);
     setError(null);
 
-    try {
-      const profile = profiles.find((p) => p.id === selectedProfile);
-      const apiKey = generateApiKey();
+    const profile = profiles.find((p) => p.id === selectedProfile);
+    const result = await createGateway({
+      organizationId,
+      gatewayProfileId: selectedProfile,
+      name: profile?.display_name
+        ? `${profile.display_name} ${new Date().toLocaleDateString()}`
+        : undefined,
+    });
 
-      const { error: err } = await supabase.from("gateways").insert({
-        organization_id: organizationId,
-        name: `${profile?.display_name} ${new Date().toLocaleDateString()}`,
-        serial_number: `SN-${Date.now()}`,
-        api_key: apiKey,
-        firmware_version: "1.0.0",
-        status: "pending",
-        gateway_profile_id: selectedProfile,
-      });
-
-      if (err) throw err;
-
-      router.push("/dashboard/gateways");
-      router.refresh();
-    } catch (err) {
-      console.error("Failed to create gateway:", err);
-      setError("Failed to create gateway. Please try again.");
+    if (!result.success) {
+      setError(result.error ?? "Failed to create gateway. Please try again.");
       setLoading(false);
+      return;
     }
+
+    setCreatedApiKey(result.apiKey ?? "");
+    setLoading(false);
   };
+
+  const handleCreateGatewayAdvanced = async () => {
+    if (!advProfile) {
+      setError("Please select a gateway profile.");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const result = await createGateway({
+      organizationId,
+      gatewayProfileId: advProfile,
+      name: advName || undefined,
+      serialNumber: advSerial || undefined,
+      siteId: advSite || null,
+    });
+
+    if (!result.success) {
+      setError(result.error ?? "Failed to create gateway. Please try again.");
+      setLoading(false);
+      return;
+    }
+
+    setCreatedApiKey(result.apiKey ?? "");
+    setLoading(false);
+  };
+
+  // Success screen — the API key is shown only once, right after creation.
+  if (createdApiKey !== null) {
+    return (
+      <div className="space-y-6 max-w-lg">
+        <div className="bg-green-50 border border-green-200 rounded-xl p-6">
+          <h2 className="text-xl font-semibold text-green-800 mb-2">
+            Gateway created
+          </h2>
+          <p className="text-sm text-green-700">
+            Copy the API key below now — for security it is shown only once and
+            cannot be retrieved again.
+          </p>
+        </div>
+
+        <div className="bg-surface border border-border rounded-lg p-4 space-y-3">
+          <div>
+            <label className="block text-xs text-text-secondary font-medium mb-1">
+              Ingest URL
+            </label>
+            <input
+              type="text"
+              readOnly
+              value="https://ehysifztspotxmmmkuyc.supabase.co/functions/v1/ingest"
+              className="w-full px-3 py-2 bg-surface-secondary border border-border rounded text-sm font-mono text-text"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-text-secondary font-medium mb-1">
+              API Key
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                readOnly
+                value={createdApiKey}
+                className="flex-1 px-3 py-2 bg-surface-secondary border border-border rounded text-sm font-mono text-text"
+              />
+              <button
+                onClick={() => navigator.clipboard?.writeText(createdApiKey)}
+                className="px-3 py-2 bg-surface-hover hover:bg-surface rounded text-xs font-medium text-text-secondary"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            router.push("/dashboard/gateways");
+            router.refresh();
+          }}
+          className="px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark"
+        >
+          Done
+        </button>
+      </div>
+    );
+  }
 
   // Guided mode
   if (mode === "guided") {
@@ -183,7 +267,6 @@ export function GatewayAddWizard({
     }
 
     const instruction = visibleInstructions[currentStep];
-    const apiKey = generateApiKey();
 
     return (
       <div className="space-y-6">
@@ -228,7 +311,8 @@ export function GatewayAddWizard({
           </div>
         </div>
 
-        {/* Ingest URL and API Key */}
+        {/* Ingest URL — the API key is issued only after the gateway is
+            created (on the final step), so it is not shown here. */}
         <div className="bg-brand-light border border-brand rounded-lg p-4 space-y-3">
           <p className="text-sm font-medium text-brand">Configuration Details</p>
           <div>
@@ -242,17 +326,10 @@ export function GatewayAddWizard({
               className="w-full px-3 py-2 bg-surface border border-brand rounded text-sm font-mono text-text"
             />
           </div>
-          <div>
-            <label className="block text-xs text-brand font-medium mb-1">
-              API Key
-            </label>
-            <input
-              type="text"
-              readOnly
-              value={apiKey}
-              className="w-full px-3 py-2 bg-surface border border-brand rounded text-sm font-mono text-text"
-            />
-          </div>
+          <p className="text-xs text-brand">
+            A unique API key will be generated and displayed once when you
+            create the gateway on the final step.
+          </p>
         </div>
 
         <div className="flex gap-3">
@@ -318,6 +395,8 @@ export function GatewayAddWizard({
           </label>
           <input
             type="text"
+            value={advName}
+            onChange={(e) => setAdvName(e.target.value)}
             placeholder="e.g., Main Building Gateway"
             className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-text"
           />
@@ -329,6 +408,8 @@ export function GatewayAddWizard({
           </label>
           <input
             type="text"
+            value={advSerial}
+            onChange={(e) => setAdvSerial(e.target.value)}
             placeholder="e.g., UG56-12345678"
             className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-text"
           />
@@ -338,7 +419,11 @@ export function GatewayAddWizard({
           <label className="block text-sm font-medium text-text mb-1">
             Site
           </label>
-          <select className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-text">
+          <select
+            value={advSite}
+            onChange={(e) => setAdvSite(e.target.value)}
+            className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-text"
+          >
             <option value="">Select a site</option>
             {sites.map((site) => (
               <option key={site.id} value={site.id}>
@@ -352,7 +437,11 @@ export function GatewayAddWizard({
           <label className="block text-sm font-medium text-text mb-1">
             Gateway Profile
           </label>
-          <select className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-text">
+          <select
+            value={advProfile}
+            onChange={(e) => setAdvProfile(e.target.value)}
+            className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-text"
+          >
             <option value="">Select a profile</option>
             {profiles.map((profile) => (
               <option key={profile.id} value={profile.id}>
@@ -360,17 +449,6 @@ export function GatewayAddWizard({
               </option>
             ))}
           </select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-text mb-1">
-            Firmware Version
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., 1.0.0"
-            className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-brand focus:border-brand outline-none text-text"
-          />
         </div>
       </div>
 
@@ -382,7 +460,8 @@ export function GatewayAddWizard({
           Back to Guided Mode
         </button>
         <button
-          disabled={loading}
+          onClick={handleCreateGatewayAdvanced}
+          disabled={loading || !advProfile}
           className="px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brand-dark disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? "Creating..." : "Create Gateway"}
