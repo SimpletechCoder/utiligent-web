@@ -37,14 +37,20 @@ export default async function SiteDetailPage({ params }: SiteDetailPageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const [site, canEdit, canManageBilling, canManageMembers] = await Promise.all([
-    getSite(supabase, id),
-    userHasPermission("site.edit"),
-    userHasPermission("site.billing.manage"),
-    userHasPermission("site.member.manage"),
-  ]);
+  const [site, canEdit, canViewBilling, canManageBilling, canManageMembers] =
+    await Promise.all([
+      getSite(supabase, id),
+      userHasPermission("site.edit"),
+      userHasPermission("site.billing.view"),
+      userHasPermission("site.billing.manage"),
+      userHasPermission("site.member.manage"),
+    ]);
 
   if (!site) notFound();
+
+  // Billing is commercially sensitive — only render it for users who may view it
+  // (managers may always manage/view). This mirrors the tightened RLS SELECT.
+  const showBilling = canViewBilling || canManageBilling;
 
   const [buildingsRes, metersRes, gatewaysRes, billingRes, siteMembersRes, orgMembersRes] =
     await Promise.all([
@@ -280,13 +286,15 @@ export default async function SiteDetailPage({ params }: SiteDetailPageProps) {
       </div>
 
       {/* Billing */}
-      <SiteBillingSection
-        siteId={site.id}
-        canManage={canManageBilling}
-        currency={currency}
-        meterCount={meters.length}
-        initialItems={billingItems}
-      />
+      {showBilling && (
+        <SiteBillingSection
+          siteId={site.id}
+          canManage={canManageBilling}
+          currency={currency}
+          meterCount={meters.length}
+          initialItems={billingItems}
+        />
+      )}
 
       {/* Members */}
       <SiteMembersSection

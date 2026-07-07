@@ -71,10 +71,16 @@ create index if not exists site_billing_configs_org_idx
 
 alter table app.site_billing_configs enable row level security;
 
+-- Billing is commercially sensitive: plain org access is NOT enough to read it.
+-- A reader must additionally hold the `site.billing.view` flag; org managers
+-- (which includes platform admins via can_manage_org) always retain access.
+-- NOTE: app.has_permission(text) is the platform's current-user flag predicate
+-- documented in SECURITY.md.
 drop policy if exists site_billing_configs_sel on app.site_billing_configs;
 create policy site_billing_configs_sel on app.site_billing_configs
   for select using (
-    app.can_access_org(organization_id) or app.can_manage_org(organization_id)
+    (app.can_access_org(organization_id) and app.has_permission('site.billing.view'))
+    or app.can_manage_org(organization_id)
   );
 
 drop policy if exists site_billing_configs_ins on app.site_billing_configs;
@@ -133,6 +139,57 @@ drop policy if exists site_memberships_del on app.site_memberships;
 create policy site_memberships_del on app.site_memberships
   for delete using (app.can_manage_org(organization_id));
 
+-- Integrity trigger: a CHECK constraint cannot cross tables, so we enforce with
+-- a BEFORE INSERT/UPDATE trigger that the assignment is internally consistent —
+--   (a) the site belongs to the stated organization, and
+--   (b) the user is an ACTIVE member of that same organization.
+-- SECURITY DEFINER so it can read sites/memberships regardless of the caller's
+-- RLS view; EXECUTE is revoked from PUBLIC per SECURITY.md (fires by mechanism).
+create or replace function app.validate_site_membership()
+returns trigger
+language plpgsql
+security definer
+set search_path = app, public
+as $$
+declare
+  v_site_org uuid;
+  v_is_member boolean;
+begin
+  select organization_id into v_site_org from app.sites where id = new.site_id;
+
+  if v_site_org is null then
+    raise exception 'Site % does not exist', new.site_id;
+  end if;
+
+  if v_site_org <> new.organization_id then
+    raise exception 'Site % does not belong to organization %', new.site_id, new.organization_id
+      using errcode = 'check_violation';
+  end if;
+
+  select exists (
+    select 1
+    from app.memberships m
+    where m.user_id = new.user_id
+      and m.organization_id = new.organization_id
+      and m.status = 'active'
+  ) into v_is_member;
+
+  if not v_is_member then
+    raise exception 'User % is not an active member of organization %', new.user_id, new.organization_id
+      using errcode = 'check_violation';
+  end if;
+
+  return new;
+end;
+$$;
+
+revoke execute on function app.validate_site_membership() from public;
+
+drop trigger if exists site_memberships_validate on app.site_memberships;
+create trigger site_memberships_validate
+  before insert or update on app.site_memberships
+  for each row execute function app.validate_site_membership();
+
 -- ----------------------------------------------------------------------------
 -- 5. admin_access_requests: a platform/reseller admin requests edit access to
 --    another organization's data (read-only drill-down otherwise).
@@ -171,10 +228,14 @@ create policy admin_access_requests_sel on app.admin_access_requests
     or app.can_manage_org(target_organization_id)
   );
 
--- Any authenticated user may file a request as themselves.
+-- Only platform admins may file an access request, and only as themselves.
+-- (Edit-access to another org is a platform-admin capability, not something a
+-- regular authenticated user may initiate.)
 drop policy if exists admin_access_requests_ins on app.admin_access_requests;
 create policy admin_access_requests_ins on app.admin_access_requests
-  for insert with check (requester_user_id = (select auth.uid()));
+  for insert with check (
+    app.is_platform_admin() and requester_user_id = (select auth.uid())
+  );
 
 -- Only platform admins or a manager of the target org may resolve a request.
 drop policy if exists admin_access_requests_upd on app.admin_access_requests;

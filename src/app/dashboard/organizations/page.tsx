@@ -40,20 +40,51 @@ export default async function OrganizationsPage() {
     return <AccessDenied />;
   }
 
-  const [orgsRes, sitesRes, metersRes, billingRes] = await Promise.all([
+  const { data: orgsData } = await supabase
+    .from("organizations")
+    .select("id, name, slug, status, org_type")
+    .in("org_type", ["reseller", "customer"])
+    .order("org_type")
+    .order("name");
+
+  const orgs = orgsData ?? [];
+
+  if (orgs.length === 0) {
+    return (
+      <div>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-text">Organizations</h1>
+          <p className="text-text-muted mt-1">
+            Read-only overview of all reseller &amp; customer accounts
+          </p>
+        </div>
+        <p className="text-sm text-text-muted">No reseller or customer organizations found.</p>
+      </div>
+    );
+  }
+
+  const orgIds = orgs.map((o: any) => o.id);
+
+  // Scope sites to just these orgs (not the whole table), then scope meters to
+  // just those sites — instead of fetching every row and filtering in memory.
+  const { data: sitesData } = await supabase
+    .from("sites")
+    .select("id, organization_id")
+    .in("organization_id", orgIds);
+
+  const sites = sitesData ?? [];
+  const siteIds = sites.map((s: any) => s.id);
+
+  const [metersRes, billingRes] = await Promise.all([
+    siteIds.length
+      ? supabase.from("meters").select("site_id").in("site_id", siteIds)
+      : Promise.resolve({ data: [] as { site_id: string }[] }),
     supabase
-      .from("organizations")
-      .select("id, name, slug, status, org_type")
-      .in("org_type", ["reseller", "customer"])
-      .order("org_type")
-      .order("name"),
-    supabase.from("sites").select("id, organization_id"),
-    supabase.from("meters").select("id, site_id"),
-    supabase.from("site_billing_configs").select("organization_id, items"),
+      .from("site_billing_configs")
+      .select("organization_id, items")
+      .in("organization_id", orgIds),
   ]);
 
-  const orgs = orgsRes.data ?? [];
-  const sites = sitesRes.data ?? [];
   const meters = metersRes.data ?? [];
   const billing = billingRes.data ?? [];
 

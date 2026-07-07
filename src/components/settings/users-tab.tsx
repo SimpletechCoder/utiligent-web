@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { inviteUser } from "@/app/actions/users";
+import { saveUserOverrides } from "@/app/actions/permissions";
 
 interface UsersTabProps {
   orgId: string;
@@ -215,29 +216,17 @@ export function UsersTab({ orgId, permissions, isPlatformAdmin }: UsersTabProps)
     if (!overrideMember) return;
     setMessage(null);
     try {
-      const supabase = createClient();
-
-      // Delete existing overrides for this member
-      await supabase
-        .from("user_permission_overrides")
-        .delete()
-        .eq("membership_id", overrideMember.id);
-
-      // Insert new overrides
-      const overrideEntries = Object.entries(overrides);
-      if (overrideEntries.length > 0) {
-        const { error } = await supabase
-          .from("user_permission_overrides")
-          .insert(
-            overrideEntries.map(([flagId, granted]) => ({
-              membership_id: overrideMember.id,
-              flag_id: flagId,
-              granted,
-            }))
-          );
-        if (error) throw error;
+      // Persist through the server action, which enforces the org's permission
+      // caps and platform-only rules on the write path (defense-in-depth beyond
+      // the greyed-out checkboxes).
+      const result = await saveUserOverrides(
+        overrideMember.id,
+        Object.entries(overrides).map(([flagId, granted]) => ({ flagId, granted }))
+      );
+      if (!result.success) {
+        setMessage({ type: "error", text: result.error ?? "Failed to save overrides" });
+        return;
       }
-
       setMessage({ type: "success", text: "Permission overrides saved" });
       setOverrideMember(null);
     } catch (err: any) {

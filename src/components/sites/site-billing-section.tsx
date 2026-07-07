@@ -3,11 +3,12 @@
 import { useMemo, useState } from "react";
 import { saveSiteBillingConfig } from "@/app/actions/billing";
 import {
+  basePricePerMeter,
   computeItem,
   computeTotals,
-  defaultBillingItems,
   formatCurrency,
   pricingTierLabel,
+  VALVE_LEAK_ADDON_PRICE,
   type BillingItem,
 } from "@/lib/billing";
 
@@ -19,6 +20,16 @@ interface SiteBillingSectionProps {
   initialItems: BillingItem[] | null;
 }
 
+function findAdjustment(items: BillingItem[] | null, key: string): number {
+  const match = items?.find((i) => i.key === key);
+  return match ? Math.max(0, Number(match.resellerAdjustment) || 0) : 0;
+}
+
+function findQuantity(items: BillingItem[] | null, key: string, fallback: number): number {
+  const match = items?.find((i) => i.key === key);
+  return match ? Math.max(0, Math.trunc(Number(match.quantity) || 0)) : fallback;
+}
+
 export function SiteBillingSection({
   siteId,
   canManage,
@@ -26,26 +37,54 @@ export function SiteBillingSection({
   meterCount,
   initialItems,
 }: SiteBillingSectionProps) {
-  const [items, setItems] = useState<BillingItem[]>(
-    initialItems && initialItems.length > 0
-      ? initialItems
-      : defaultBillingItems(meterCount)
+  // Only the reseller margin (and the add-on's meter coverage) are editable.
+  // Base prices and the metering quantity are server-authoritative — shown here
+  // read-only, computed from the live meter count so the preview matches what
+  // the server will persist.
+  const [meteringAdj, setMeteringAdj] = useState<number>(() =>
+    findAdjustment(initialItems, "metering")
+  );
+  const [valveAdj, setValveAdj] = useState<number>(() =>
+    findAdjustment(initialItems, "valve_leak")
+  );
+  const [valveQty, setValveQty] = useState<number>(() =>
+    Math.min(findQuantity(initialItems, "valve_leak", 0), meterCount)
   );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<
     { type: "success" | "error"; text: string } | null
   >(null);
 
+  const meteringBase = basePricePerMeter(meterCount);
+
+  const items: BillingItem[] = useMemo(
+    () => [
+      {
+        key: "metering",
+        label: "Metering & Monitoring",
+        basePrice: meteringBase,
+        resellerAdjustment: meteringAdj,
+        quantity: meterCount,
+        addon: false,
+      },
+      {
+        key: "valve_leak",
+        label: "Valve + Leak Detection",
+        basePrice: VALVE_LEAK_ADDON_PRICE,
+        resellerAdjustment: valveAdj,
+        quantity: valveQty,
+        addon: true,
+      },
+    ],
+    [meteringBase, meteringAdj, meterCount, valveAdj, valveQty]
+  );
+
   const totals = useMemo(() => computeTotals(items), [items]);
 
-  function updateItem(index: number, patch: Partial<BillingItem>) {
-    setItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, ...patch } : item))
-    );
-  }
-
   function resetToDefaults() {
-    setItems(defaultBillingItems(meterCount));
+    setMeteringAdj(0);
+    setValveAdj(0);
+    setValveQty(0);
     setMessage(null);
   }
 
@@ -53,7 +92,15 @@ export function SiteBillingSection({
     setSaving(true);
     setMessage(null);
     try {
-      const result = await saveSiteBillingConfig(siteId, items, currency);
+      // Send only the reseller adjustments; the server recomputes base prices.
+      const result = await saveSiteBillingConfig(
+        siteId,
+        [
+          { key: "metering", resellerAdjustment: meteringAdj },
+          { key: "valve_leak", resellerAdjustment: valveAdj, quantity: valveQty },
+        ],
+        currency
+      );
       if (!result.success) {
         setMessage({ type: "error", text: result.error ?? "Failed to save" });
       } else {
@@ -84,7 +131,7 @@ export function SiteBillingSection({
               onClick={resetToDefaults}
               className="px-3 py-2 border border-border text-text rounded-lg text-sm font-medium hover:bg-surface-hover transition-colors"
             >
-              Reset to defaults
+              Reset margins
             </button>
             <button
               onClick={handleSave}
@@ -134,8 +181,9 @@ export function SiteBillingSection({
             </tr>
           </thead>
           <tbody className="divide-y divide-border-light">
-            {items.map((raw, index) => {
+            {items.map((raw) => {
               const item = computeItem(raw);
+              const isAddon = item.key === "valve_leak";
               return (
                 <tr key={item.key}>
                   <td className="py-3 pr-4">
@@ -145,15 +193,19 @@ export function SiteBillingSection({
                     )}
                   </td>
                   <td className={`py-3 px-4 ${cellNum}`}>
-                    {canManage ? (
+                    {canManage && isAddon ? (
                       <input
                         type="number"
                         min={0}
-                        value={item.quantity}
+                        max={meterCount}
+                        value={valveQty}
                         onChange={(e) =>
-                          updateItem(index, {
-                            quantity: Math.max(0, Number(e.target.value) || 0),
-                          })
+                          setValveQty(
+                            Math.min(
+                              Math.max(0, Math.trunc(Number(e.target.value) || 0)),
+                              meterCount
+                            )
+                          )
                         }
                         className="w-20 px-2 py-1 border border-border rounded text-sm text-right bg-surface text-text focus:outline-none focus:ring-2 focus:ring-brand"
                       />
@@ -168,13 +220,14 @@ export function SiteBillingSection({
                     {canManage ? (
                       <input
                         type="number"
+                        min={0}
                         step="any"
-                        value={item.resellerAdjustment}
-                        onChange={(e) =>
-                          updateItem(index, {
-                            resellerAdjustment: Number(e.target.value) || 0,
-                          })
-                        }
+                        value={isAddon ? valveAdj : meteringAdj}
+                        onChange={(e) => {
+                          const next = Math.max(0, Number(e.target.value) || 0);
+                          if (isAddon) setValveAdj(next);
+                          else setMeteringAdj(next);
+                        }}
                         className="w-24 px-2 py-1 border border-border rounded text-sm text-right bg-surface text-text focus:outline-none focus:ring-2 focus:ring-brand"
                       />
                     ) : (
@@ -210,6 +263,13 @@ export function SiteBillingSection({
           </tfoot>
         </table>
       </div>
+
+      {canManage && (
+        <p className="px-6 pb-5 -mt-2 text-xs text-text-muted">
+          Base prices are set automatically from the site&apos;s meter count and cannot be
+          edited. You control the reseller margin only.
+        </p>
+      )}
     </div>
   );
 }

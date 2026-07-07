@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { saveProfileFlags } from '@/app/actions/permissions';
 
 interface PermissionProfile {
   id: string;
@@ -152,20 +153,14 @@ export function PermissionProfilesTab({
 
       if (createError) throw createError;
 
-      // Insert flag associations
-      if (createFormData.selectedFlags.size > 0) {
-        const flagAssociations = Array.from(createFormData.selectedFlags).map(
-          (flagId) => ({
-            profile_id: newProfile.id,
-            flag_id: flagId,
-          })
-        );
-
-        const { error: flagError } = await supabase
-          .from('permission_profile_flags')
-          .insert(flagAssociations);
-
-        if (flagError) throw flagError;
+      // Persist flag associations through the server action, which enforces the
+      // org's permission caps and platform-only rules on the write path.
+      const flagResult = await saveProfileFlags(
+        newProfile.id,
+        Array.from(createFormData.selectedFlags)
+      );
+      if (!flagResult.success) {
+        throw new Error(flagResult.error ?? 'Failed to save profile permissions');
       }
 
       setSuccess('Profile created successfully');
@@ -201,30 +196,16 @@ export function PermissionProfilesTab({
 
       if (updateError) throw updateError;
 
-      // Re-sync flag associations. `editingProfile.flags` already reflects the
-      // desired end state (the modal mutates it as the admin toggles flags), so
-      // we replace the whole set: delete all existing rows, then insert the
-      // desired ones. The previous diff compared editingProfile.flags against
-      // itself, so flag removals never persisted.
-      const { error: deleteError } = await supabase
-        .from('permission_profile_flags')
-        .delete()
-        .eq('profile_id', editingProfile.id);
-
-      if (deleteError) throw deleteError;
-
-      const desiredFlagIds = editingProfile.flags.map((f) => f.id);
-      if (desiredFlagIds.length > 0) {
-        const { error: insertError } = await supabase
-          .from('permission_profile_flags')
-          .insert(
-            desiredFlagIds.map((flagId) => ({
-              profile_id: editingProfile.id,
-              flag_id: flagId,
-            }))
-          );
-
-        if (insertError) throw insertError;
+      // Re-sync flag associations through the server action. `editingProfile.flags`
+      // already reflects the desired end state (the modal mutates it as the admin
+      // toggles flags); the action replaces the whole set and enforces the org's
+      // permission caps / platform-only rules server-side.
+      const flagResult = await saveProfileFlags(
+        editingProfile.id,
+        editingProfile.flags.map((f) => f.id)
+      );
+      if (!flagResult.success) {
+        throw new Error(flagResult.error ?? 'Failed to save profile permissions');
       }
 
       setSuccess('Profile updated successfully');

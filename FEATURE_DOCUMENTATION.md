@@ -2,11 +2,38 @@
 
 Branch: `feature/site-management-billing`
 Base: `main`
-Scope: 25 files changed, ~3,109 insertions.
 
 This document describes the site-management, dashboard-mapping, per-site reseller
 billing, permission-inheritance, super-admin reseller view, user-to-site
 assignment, and audit-log enhancements added to the Utiligent platform.
+
+---
+
+## Code-Review Hardening (post-review)
+
+Six review findings were fixed on this branch. Summary (details in the relevant
+sections below):
+
+1. **Billing server authority (CRITICAL)** — `saveSiteBillingConfig` no longer
+   trusts client base prices. It reads the live meter count, computes base
+   prices server-side, and accepts only the reseller adjustment (validated ≥ 0)
+   plus the add-on's meter coverage. The UI shows base price read-only.
+   → [§4](#4-server-action-api-reference), [§6](#6-billing-pricing-logic).
+2. **Admin-access-request RLS (HIGH)** — the INSERT policy now requires
+   `app.is_platform_admin()` (was: any authenticated user). → [§3.6](#36-rls-policies).
+3. **Site-membership integrity (HIGH)** — a `BEFORE INSERT/UPDATE` trigger
+   enforces that the site belongs to the stated org and the user is an active
+   member of it; `assignUserToSite` also verifies this. → [§3.4](#34-site_memberships--new-table).
+4. **Permission caps enforced server-side (MEDIUM)** — new `permissions.ts`
+   server actions (`saveProfileFlags`, `saveUserOverrides`) reject grants that
+   exceed the org's caps (or are platform-only); the profile/override UIs now
+   write through them. → [§4](#4-server-action-api-reference), [§7](#7-permission-inheritance-model).
+5. **Billing RLS tightened (MEDIUM)** — `site_billing_configs` SELECT now
+   requires the `site.billing.view` flag (or org-manage); the site page gates
+   the billing section on it. → [§3.6](#36-rls-policies).
+6. **Filtered queries (MEDIUM)** — the organizations pages now scope queries
+   with `.in()`/`.eq()` and count aggregates instead of fetching whole tables.
+   → [§10](#10-known-limitations--follow-ups).
 
 ---
 
@@ -72,9 +99,10 @@ architectural patterns:
 | `src/lib/audit.ts` | `writeAudit()` — ISO/POPIA-compliant audit writer (resolves actor IP from proxy headers; non-fatal on failure). `server-only`. |
 | `src/lib/billing.ts` | Pure, isomorphic pricing helpers (tiers, line-item computation, totals, formatting). Shared by UI and server action. |
 | `src/lib/platform-admin.ts` | `isPlatformAdmin()` server-side helper. |
-| `src/app/actions/sites.ts` | `createSite`, `updateSite`, `assignUserToSite`, `removeSiteMembership`. |
-| `src/app/actions/billing.ts` | `saveSiteBillingConfig`. |
+| `src/app/actions/sites.ts` | `createSite`, `updateSite`, `assignUserToSite` (verifies target org membership), `removeSiteMembership`. |
+| `src/app/actions/billing.ts` | `saveSiteBillingConfig` (server-authoritative base pricing). |
 | `src/app/actions/admin.ts` | `requestEditAccess`. |
+| `src/app/actions/permissions.ts` | `saveProfileFlags`, `saveUserOverrides` — cap-enforcing write paths for permission flags. |
 
 ### New — pages & components
 
@@ -98,8 +126,8 @@ architectural patterns:
 | `src/app/dashboard/page.tsx` | Added `getMapSites()` (per-site meter/gateway/alert rollup → health) and rendered `<DashboardMap>` under the stat cards. |
 | `src/app/dashboard/sites/page.tsx` | Added `site.add` permission + org lookup, "Add Site" button, cards now link to detail pages. |
 | `src/components/audit-log-client.tsx` | Added User + Entity ID filters; expanded row now shows IP and Before/After JSON from the new columns. |
-| `src/components/settings/users-tab.tsx` | Override modal greys out flags outside the org's permission caps. |
-| `src/components/settings/permission-profiles-tab.tsx` | Create/edit profile modals grey out capped flags. |
+| `src/components/settings/users-tab.tsx` | Override modal greys out flags outside the org's permission caps; saves through the cap-enforcing `saveUserOverrides` action. |
+| `src/components/settings/permission-profiles-tab.tsx` | Create/edit profile modals grey out capped flags; flag writes go through the cap-enforcing `saveProfileFlags` action. |
 | `src/components/sidebar.tsx` | Client-side platform-admin check adds an "Organizations" nav item. |
 | `package.json` / `package-lock.json` | Added `leaflet`, `react-leaflet`, `@types/leaflet`. |
 
@@ -166,7 +194,16 @@ Explicit user-to-site assignments.
 | `created_at` | timestamptz | default `now()` |
 | `created_by` | uuid | |
 
-Constraint: `unique (site_id, user_id)`. Indexes: `(site_id)`, `(user_id)`, `(organization_id)`.
+Constraint: `unique (site_id, user_id)`. Foreign keys: `site_id → app.sites`,
+`user_id → auth.users`, `organization_id → app.organizations` (all
+`ON DELETE CASCADE`). Indexes: `(site_id)`, `(user_id)`, `(organization_id)`.
+
+**Integrity trigger** `app.validate_site_membership()` (BEFORE INSERT/UPDATE):
+a cross-table CHECK is not possible, so this SECURITY DEFINER trigger rejects any
+row where (a) the site's `organization_id` ≠ the row's `organization_id`, or
+(b) the user is not an **active** member of that organization. `EXECUTE` is
+revoked from `PUBLIC` (it fires by mechanism). The `assignUserToSite` action
+performs the same membership check first for a friendlier error message.
 
 ### 3.5 `admin_access_requests` — new table
 
@@ -195,9 +232,18 @@ so it evaluates once per query (InitPlan).
 
 | Table | SELECT | INSERT | UPDATE | DELETE |
 |---|---|---|---|---|
-| `site_billing_configs` | `can_access_org` OR `can_manage_org` | `can_manage_org` | `can_manage_org` | `can_manage_org` |
+| `site_billing_configs` | (`can_access_org` AND `has_permission('site.billing.view')`) OR `can_manage_org` | `can_manage_org` | `can_manage_org` | `can_manage_org` |
 | `site_memberships` | `can_access_org` OR `can_manage_org` OR own row | `can_manage_org` | `can_manage_org` | `can_manage_org` |
-| `admin_access_requests` | own request OR `is_platform_admin` OR `can_manage_org(target)` | requester = self | `is_platform_admin` OR `can_manage_org(target)` | `is_platform_admin` |
+| `admin_access_requests` | own request OR `is_platform_admin` OR `can_manage_org(target)` | **`is_platform_admin` AND requester = self** | `is_platform_admin` OR `can_manage_org(target)` | `is_platform_admin` |
+
+Two policies were tightened during review:
+- **`site_billing_configs` SELECT** requires the `site.billing.view` flag (in
+  addition to org access) because billing is commercially sensitive; org
+  managers/platform admins retain access via `can_manage_org`. Uses the
+  platform's `app.has_permission(text)` current-user predicate.
+- **`admin_access_requests` INSERT** requires `app.is_platform_admin()` — raising
+  a cross-org edit-access request is a platform-admin capability, not something a
+  regular authenticated user may initiate.
 
 ### 3.7 Seeded permission flags
 
@@ -240,6 +286,8 @@ result (never throw across the boundary), and write an audit entry on success.
 
 #### `assignUserToSite(siteId, userId, role = "viewer")`
 - **Permission**: `site.member.manage` on the site's org.
+- **Integrity**: verifies the target user is an **active member of the site's
+  organization** before assigning (also enforced by the DB trigger).
 - **Behaviour**: upserts on `(site_id, user_id)`.
 - **Returns**: `{ success, error? }`.
 - **Audit**: `site.member.assign`.
@@ -251,13 +299,38 @@ result (never throw across the boundary), and write an audit entry on success.
 
 ### `billing.ts`
 
-#### `saveSiteBillingConfig(siteId, items, currency = "ZAR", notes = null)`
+#### `saveSiteBillingConfig(siteId, adjustments, currency = "ZAR", notes = null)`
 - **Permission**: `site.billing.manage` + active membership of the site's org.
-- **Params**: `items: BillingItem[]` — sanitized server-side (whitelisted
-  fields, numeric coercion, string length caps) before persisting.
+- **Params**: `adjustments: BillingAdjustmentInput[]` where
+  `BillingAdjustmentInput = { key: string; resellerAdjustment: number; quantity?: number }`.
+  The client sends **only** the reseller margin (and the add-on's meter coverage).
+- **Server authority**: base prices, labels, the pricing tier and the metering
+  quantity are all computed server-side from the site's live meter count. The
+  client's `basePrice` is never trusted. `resellerAdjustment` is validated ≥ 0
+  (rejected otherwise); the add-on `quantity` is clamped to `[0, meterCount]`.
 - **Behaviour**: upserts on `(site_id)`; snapshots the previous config for audit.
 - **Returns**: `{ success, error? }`.
 - **Audit**: `site.billing.update` (before/after).
+
+### `permissions.ts`
+
+#### `saveProfileFlags(profileId, flagIds)`
+- **Permission**: `user.permission.override` + active membership of the profile's
+  org (system profiles require platform admin).
+- **Enforcement**: rejects unknown flags, platform-only flags (for non-admins),
+  and any flag outside the org's `reseller_permission_caps` when a cap is set.
+  Platform admins bypass caps/platform-only.
+- **Behaviour**: replaces the profile's flag set (delete-then-insert).
+- **Returns**: `{ success, error? }`. **Audit**: `permission.profile.flags.update`.
+
+#### `saveUserOverrides(membershipId, overrides)`
+- **Params**: `overrides: { flagId: string; granted: boolean }[]`.
+- **Permission**: `user.permission.override` + active membership of the
+  membership's org (or platform admin).
+- **Enforcement**: only *granted* flags are cap-checked (revocations are always
+  allowed); granted flags must be within caps and non-platform-only for non-admins.
+- **Behaviour**: replaces the membership's overrides (delete-then-insert).
+- **Returns**: `{ success, error? }`. **Audit**: `permission.override.update`.
 
 ### `admin.ts`
 
@@ -292,10 +365,13 @@ result (never throw across the boundary), and write an audit entry on success.
 
 **`SiteBillingSection`** — `components/sites/site-billing-section.tsx` (`"use client"`)
 - Props: `siteId`, `canManage`, `currency`, `meterCount`, `initialItems`.
-- Renders the editable billing table (Item, Qty, Base Price, Reseller Adj.,
-  Client Price, Margin) with a totals footer. "Reset to defaults" regenerates
-  line items from the live meter count; "Save Billing" calls
-  `saveSiteBillingConfig`. Read-only when `canManage` is false.
+- Renders the billing table (Item, Qty, Base Price, Reseller Adj., Client Price,
+  Margin) with a totals footer. **Base price and the metering quantity are
+  read-only** (server-authoritative); only the reseller adjustment and the
+  add-on's meter coverage are editable. "Reset margins" zeroes the adjustments;
+  "Save Billing" sends only `{ key, resellerAdjustment, quantity? }` to
+  `saveSiteBillingConfig`. Read-only when `canManage` is false. Rendered on the
+  site page only when the viewer holds `site.billing.view` (or can manage).
 
 **`SiteMembersSection`** — `components/sites/site-members-section.tsx` (`"use client"`)
 - Props: `siteId`, `canManage`, `members`, `orgMembers`.
@@ -364,6 +440,14 @@ All values are rounded to 2 decimals (`round2`, EPSILON-guarded).
 "Reseller Adjustment" is the per-unit margin the reseller adds; "Client Price" is
 what the end customer pays. Margin totals surface the reseller's monthly uplift.
 
+**Server authority (review fix #1)**: base prices are **never** accepted from the
+client. `saveSiteBillingConfig` reads the site's live meter count, applies the
+tier and the fixed add-on price server-side, and takes only the reseller
+adjustment (validated ≥ 0) and the add-on's meter coverage (clamped to the meter
+count). In the UI, base price and the metering quantity are read-only; only the
+margin (and the add-on quantity) are editable. This prevents a reseller from
+writing a zero/negative base cost.
+
 ---
 
 ## 7. Permission Inheritance Model
@@ -374,23 +458,21 @@ The existing `reseller_permission_caps(organization_id, flag_id)` table defines
 the ceiling of flags an organization may grant. The UI now enforces this cap so a
 company cannot grant employees permissions beyond its own cap.
 
-**Where enforced (client-side UI):**
-- `components/settings/users-tab.tsx` — the per-user override modal.
-- `components/settings/permission-profiles-tab.tsx` — the create & edit profile modals.
+**Enforced at two layers:**
 
-**Logic (`isFlagCapped`)**: a flag is *capped* (disabled + greyed + "Capped" badge)
-when:
-```
-capsActive (the org has ≥1 cap row) AND (not platform admin) AND (flag not in cap set)
-```
-Capped checkboxes are `disabled`, forced unchecked, and their toggle handlers
-early-return. Platform admins are never capped. When an org has **no** cap rows
-configured, nothing is capped (all flags grantable).
+1. **UI (client)** — `users-tab.tsx` and `permission-profiles-tab.tsx` grey out,
+   disable and badge ("Capped") any flag outside the cap. Logic (`isFlagCapped`):
+   ```
+   capsActive (the org has ≥1 cap row) AND (not platform admin) AND (flag not in cap set)
+   ```
+   Platform admins are never capped; with no cap rows, nothing is capped.
 
-> Note: this is UI-level enforcement of the inheritance rule (as specified).
-> Server-side effective-permission resolution in `lib/permissions.ts` is
-> unchanged; a future hardening step could also intersect overrides with caps at
-> write time.
+2. **Server write path (review fix #4)** — the flag writes go through the
+   `permissions.ts` server actions (`saveProfileFlags`, `saveUserOverrides`),
+   which re-validate every *granted* flag against the org's caps (and reject
+   platform-only flags for non-admins) before persisting. This closes the gap
+   where a crafted request could bypass the greyed-out UI. Revocations are never
+   blocked. Platform admins bypass caps.
 
 ---
 
@@ -484,8 +566,13 @@ npm run build   # Next.js 16.2.2 / Turbopack — verified passing
 - **User emails**: assigned-users, audit and org views show truncated user IDs
   (same limitation as the existing Users tab — no client-side `auth.users` join).
   A server action to resolve emails would improve all of them.
-- **Permission caps are UI-enforced**; consider also intersecting overrides with
-  caps server-side in `lib/permissions.ts` for defense-in-depth.
+- **`app.has_permission(text)` signature**: the tightened billing SELECT policy
+  assumes the platform's current-user permission predicate is `app.has_permission(text)`
+  (per SECURITY.md). If the deployed helper differs, adjust that one policy line.
+- **Reseller-view query scaling**: the organizations pages now scope every query
+  with `.in()`/`.eq()` and use count aggregates. For very large tenant counts a
+  dedicated SQL view or RPC returning per-org roll-ups in a single round trip
+  would scale better still.
 - **Lint baseline**: `npm run lint` reports pre-existing `no-explicit-any` errors
   repo-wide (`next build` does not run eslint). New code matches that established
   style.

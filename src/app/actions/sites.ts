@@ -216,6 +216,23 @@ export async function assignUserToSite(
     const auth = await authorizeOrgAction(site.organization_id, "site.member.manage");
     if (!auth.ok) return { success: false, error: auth.error };
 
+    // The user being assigned must be an active member of the site's org. The DB
+    // trigger enforces this too, but we check here for a clean error message.
+    const { data: targetMembership } = await supabase
+      .from("memberships")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("organization_id", site.organization_id)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (!targetMembership) {
+      return {
+        success: false,
+        error: "User is not an active member of this site's organization",
+      };
+    }
+
     const { error } = await supabase.from("site_memberships").upsert(
       {
         site_id: siteId,

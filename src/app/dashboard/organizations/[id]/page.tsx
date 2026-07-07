@@ -38,13 +38,24 @@ export default async function OrgDetailPage({ params }: OrgDetailPageProps) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [sitesRes, metersRes, membersRes, billingRes, requestRes] = await Promise.all([
-    supabase
-      .from("sites")
-      .select("id, name, code, status")
-      .eq("organization_id", id)
-      .order("name"),
-    supabase.from("meters").select("id, site_id"),
+  // Sites first (scoped to this org) so the meter count can be a bounded
+  // count aggregate over just this org's sites — not a full-table scan.
+  const { data: sitesData } = await supabase
+    .from("sites")
+    .select("id, name, code, status")
+    .eq("organization_id", id)
+    .order("name");
+
+  const sites = sitesData ?? [];
+  const siteIds = sites.map((s: any) => s.id);
+
+  const [metersRes, membersRes, billingRes, requestRes] = await Promise.all([
+    siteIds.length
+      ? supabase
+          .from("meters")
+          .select("id", { count: "exact", head: true })
+          .in("site_id", siteIds)
+      : Promise.resolve({ count: 0 }),
     supabase
       .from("memberships")
       .select("id", { count: "exact", head: true })
@@ -60,9 +71,7 @@ export default async function OrgDetailPage({ params }: OrgDetailPageProps) {
       .maybeSingle(),
   ]);
 
-  const sites = sitesRes.data ?? [];
-  const siteIds = new Set(sites.map((s: any) => s.id));
-  const meterCount = (metersRes.data ?? []).filter((m: any) => siteIds.has(m.site_id)).length;
+  const meterCount = metersRes.count ?? 0;
   const memberCount = membersRes.count ?? 0;
   const billingTotal = (billingRes.data ?? []).reduce(
     (sum: number, b: any) =>
