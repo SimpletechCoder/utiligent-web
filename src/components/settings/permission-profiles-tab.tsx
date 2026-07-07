@@ -37,6 +37,10 @@ export function PermissionProfilesTab({
 }: PermissionProfilesTabProps) {
   const [profiles, setProfiles] = useState<ProfileWithFlags[]>([]);
   const [allFlags, setAllFlags] = useState<PermissionFlag[]>([]);
+  // Permission inheritance: flags permitted by the org's parent cap. When caps
+  // are configured, a profile cannot grant flags outside them.
+  const [cappedFlags, setCappedFlags] = useState<Set<string>>(new Set());
+  const [capsActive, setCapsActive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -67,6 +71,14 @@ export function PermissionProfilesTab({
 
       if (flagsError) throw flagsError;
       setAllFlags(flagsData || []);
+
+      // Fetch the org's permission caps (set by the parent reseller / super admin).
+      const { data: capsData } = await supabase
+        .from('reseller_permission_caps')
+        .select('flag_id')
+        .eq('organization_id', orgId);
+      setCapsActive((capsData ?? []).length > 0);
+      setCappedFlags(new Set((capsData ?? []).map((c: any) => c.flag_id)));
 
       // Fetch profiles (system + org-specific)
       const { data: profilesData, error: profilesError } = await supabase
@@ -260,6 +272,11 @@ export function PermissionProfilesTab({
     if (isPlatformAdmin) return flags;
     return flags.filter((f) => !f.is_platform_only);
   };
+
+  // A flag is "capped" when the org has caps configured and this flag is outside
+  // them. Platform admins are never capped.
+  const isFlagCapped = (flagId: string): boolean =>
+    capsActive && !isPlatformAdmin && !cappedFlags.has(flagId);
 
   const groupFlagsByCategory = (flags: PermissionFlag[]) => {
     const grouped: { [key: string]: PermissionFlag[] } = {};
@@ -476,40 +493,56 @@ export function PermissionProfilesTab({
                       {category}
                     </h5>
                     <div className="space-y-2 ml-2">
-                      {categoryFlags.map((flag) => (
-                        <label
-                          key={flag.id}
-                          className="flex items-start gap-2 cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={createFormData.selectedFlags.has(flag.id)}
-                            onChange={(e) => {
-                              const newFlags = new Set(
-                                createFormData.selectedFlags
-                              );
-                              if (e.target.checked) {
-                                newFlags.add(flag.id);
-                              } else {
-                                newFlags.delete(flag.id);
-                              }
-                              setCreateFormData({
-                                ...createFormData,
-                                selectedFlags: newFlags,
-                              });
-                            }}
-                            className="mt-1 rounded border-border"
-                          />
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-text">
-                              {flag.display_name}
+                      {categoryFlags.map((flag) => {
+                        const capped = isFlagCapped(flag.id);
+                        return (
+                          <label
+                            key={flag.id}
+                            className={`flex items-start gap-2 ${
+                              capped ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                            }`}
+                            title={
+                              capped
+                                ? "This permission exceeds the organization's cap and cannot be granted"
+                                : undefined
+                            }
+                          >
+                            <input
+                              type="checkbox"
+                              checked={!capped && createFormData.selectedFlags.has(flag.id)}
+                              disabled={capped}
+                              onChange={(e) => {
+                                const newFlags = new Set(
+                                  createFormData.selectedFlags
+                                );
+                                if (e.target.checked) {
+                                  newFlags.add(flag.id);
+                                } else {
+                                  newFlags.delete(flag.id);
+                                }
+                                setCreateFormData({
+                                  ...createFormData,
+                                  selectedFlags: newFlags,
+                                });
+                              }}
+                              className="mt-1 rounded border-border disabled:cursor-not-allowed"
+                            />
+                            <div className="flex-1">
+                              <div className="text-sm font-medium text-text flex items-center gap-2">
+                                {flag.display_name}
+                                {capped && (
+                                  <span className="text-xs font-medium text-amber-600 px-2 py-0.5 bg-amber-100 rounded-full">
+                                    Capped
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-text-secondary">
+                                {flag.description}
+                              </div>
                             </div>
-                            <div className="text-xs text-text-secondary">
-                              {flag.description}
-                            </div>
-                          </div>
-                        </label>
-                      ))}
+                          </label>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
@@ -587,14 +620,23 @@ export function PermissionProfilesTab({
                         const isAssigned = editingProfile.flags.some(
                           (f) => f.id === flag.id
                         );
+                        const capped = isFlagCapped(flag.id);
                         return (
                           <label
                             key={flag.id}
-                            className="flex items-start gap-2 cursor-pointer"
+                            className={`flex items-start gap-2 ${
+                              capped ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                            }`}
+                            title={
+                              capped
+                                ? "This permission exceeds the organization's cap and cannot be granted"
+                                : undefined
+                            }
                           >
                             <input
                               type="checkbox"
-                              checked={isAssigned}
+                              checked={!capped && isAssigned}
+                              disabled={capped}
                               onChange={(e) => {
                                 const newFlags = e.target.checked
                                   ? [...editingProfile.flags, flag]
@@ -606,11 +648,16 @@ export function PermissionProfilesTab({
                                   flags: newFlags,
                                 });
                               }}
-                              className="mt-1 rounded border-border"
+                              className="mt-1 rounded border-border disabled:cursor-not-allowed"
                             />
                             <div className="flex-1">
-                              <div className="text-sm font-medium text-text">
+                              <div className="text-sm font-medium text-text flex items-center gap-2">
                                 {flag.display_name}
+                                {capped && (
+                                  <span className="text-xs font-medium text-amber-600 px-2 py-0.5 bg-amber-100 rounded-full">
+                                    Capped
+                                  </span>
+                                )}
                               </div>
                               <div className="text-xs text-text-secondary">
                                 {flag.description}

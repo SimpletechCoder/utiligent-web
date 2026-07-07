@@ -1,4 +1,7 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { userHasPermission } from "@/lib/permissions";
+import { AddSiteButton } from "@/components/sites/site-form";
 
 async function getSites(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data, error } = await supabase
@@ -10,6 +13,22 @@ async function getSites(supabase: Awaited<ReturnType<typeof createClient>>) {
     console.error("sites query error:", error);
   }
   return data ?? [];
+}
+
+async function getOrganizationId(
+  supabase: Awaited<ReturnType<typeof createClient>>
+): Promise<string> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "";
+  const { data } = await supabase
+    .from("memberships")
+    .select("organization_id")
+    .eq("user_id", user.id)
+    .limit(1)
+    .maybeSingle();
+  return data?.organization_id ?? "";
 }
 
 async function getSiteCounts(supabase: Awaited<ReturnType<typeof createClient>>, siteIds: string[]) {
@@ -36,7 +55,11 @@ async function getSiteCounts(supabase: Awaited<ReturnType<typeof createClient>>,
 
 export default async function SitesPage() {
   const supabase = await createClient();
-  const sites = await getSites(supabase);
+  const [sites, canAdd, organizationId] = await Promise.all([
+    getSites(supabase),
+    userHasPermission("site.add"),
+    getOrganizationId(supabase),
+  ]);
   const counts = await getSiteCounts(
     supabase,
     sites.map((s: any) => s.id)
@@ -57,6 +80,7 @@ export default async function SitesPage() {
             {sites.length} site{sites.length !== 1 ? "s" : ""} configured
           </p>
         </div>
+        {canAdd && organizationId && <AddSiteButton organizationId={organizationId} />}
       </div>
 
       {sites.length === 0 ? (
@@ -79,9 +103,10 @@ export default async function SitesPage() {
             const addr = site.address;
 
             return (
-              <div
+              <Link
                 key={site.id}
-                className="bg-surface rounded-xl border border-border p-6 hover:shadow-md transition-shadow"
+                href={`/dashboard/sites/${site.id}`}
+                className="block bg-surface rounded-xl border border-border p-6 hover:shadow-md hover:border-brand transition-all"
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -114,7 +139,7 @@ export default async function SitesPage() {
                 <div className="text-xs text-text-muted mt-3">
                   TZ: {site.timezone ?? "UTC"}
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

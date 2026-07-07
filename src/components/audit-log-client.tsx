@@ -12,6 +12,9 @@ interface AuditLog {
   entity_type: string;
   entity_id: string;
   details: Record<string, unknown> | null;
+  ip_address: string | null;
+  old_value: Record<string, unknown> | null;
+  new_value: Record<string, unknown> | null;
   created_at: string;
 }
 
@@ -20,6 +23,8 @@ export default function AuditLogClient() {
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filterEntityType, setFilterEntityType] = useState('');
+  const [filterEntityId, setFilterEntityId] = useState('');
+  const [filterUser, setFilterUser] = useState('');
   const [filterAction, setFilterAction] = useState('');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
@@ -72,6 +77,8 @@ export default function AuditLogClient() {
 
   const filteredLogs = logs.filter((log) => {
     if (filterEntityType && log.entity_type !== filterEntityType) return false;
+    if (filterEntityId && !log.entity_id.toLowerCase().includes(filterEntityId.toLowerCase())) return false;
+    if (filterUser && !log.actor_user_id.toLowerCase().includes(filterUser.toLowerCase())) return false;
     if (filterAction && !log.action.toLowerCase().includes(filterAction.toLowerCase())) return false;
     if (filterStartDate && new Date(log.created_at) < new Date(filterStartDate)) return false;
     if (filterEndDate) {
@@ -84,6 +91,8 @@ export default function AuditLogClient() {
 
   const handleResetFilters = () => {
     setFilterEntityType('');
+    setFilterEntityId('');
+    setFilterUser('');
     setFilterAction('');
     setFilterStartDate('');
     setFilterEndDate('');
@@ -112,7 +121,7 @@ export default function AuditLogClient() {
 
       {/* Filters */}
       <div className="bg-surface rounded-xl border border-border p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="text-sm font-medium text-text block mb-2">Entity Type</label>
             <select
@@ -127,6 +136,28 @@ export default function AuditLogClient() {
                 </option>
               ))}
             </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-text block mb-2">Entity ID</label>
+            <input
+              type="text"
+              value={filterEntityId}
+              onChange={(e) => setFilterEntityId(e.target.value)}
+              placeholder="Entity ID (partial)"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-surface text-text"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-text block mb-2">User</label>
+            <input
+              type="text"
+              value={filterUser}
+              onChange={(e) => setFilterUser(e.target.value)}
+              placeholder="Actor user ID (partial)"
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent bg-surface text-text"
+            />
           </div>
 
           <div>
@@ -247,16 +278,48 @@ export default function AuditLogClient() {
           </div>
 
           {/* Expanded details */}
-          {expandedId && (
-            <div className="border-t border-border-light bg-surface-secondary px-6 py-4">
-              <div className="max-w-4xl">
-                <h4 className="text-xs font-medium text-text uppercase tracking-wider mb-2">Details</h4>
-                <pre className="text-xs text-text bg-surface rounded-lg border border-border p-3 overflow-auto max-h-60">
-                  {formatJson(logs.find((l) => l.id === expandedId)?.details)}
-                </pre>
+          {expandedId && (() => {
+            const entry = logs.find((l) => l.id === expandedId);
+            if (!entry) return null;
+            const before = entry.old_value ?? (entry.details?.old_value as Record<string, unknown> | undefined) ?? null;
+            const after = entry.new_value ?? (entry.details?.new_value as Record<string, unknown> | undefined) ?? null;
+            return (
+              <div className="border-t border-border-light bg-surface-secondary px-6 py-4">
+                <div className="max-w-5xl space-y-4">
+                  <div className="flex flex-wrap gap-6 text-xs">
+                    <span className="text-text-secondary">
+                      IP Address:{' '}
+                      <span className="font-mono text-text">{entry.ip_address ?? '—'}</span>
+                    </span>
+                    <span className="text-text-secondary">
+                      Actor:{' '}
+                      <span className="font-mono text-text">{entry.actor_user_id}</span>
+                    </span>
+                    <span className="text-text-secondary">
+                      Entity:{' '}
+                      <span className="font-mono text-text">
+                        {entry.entity_type} / {entry.entity_id}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="text-xs font-medium text-text uppercase tracking-wider mb-2">Before</h4>
+                      <pre className="text-xs text-text bg-surface rounded-lg border border-border p-3 overflow-auto max-h-60">
+                        {formatJson(before)}
+                      </pre>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-medium text-text uppercase tracking-wider mb-2">After</h4>
+                      <pre className="text-xs text-text bg-surface rounded-lg border border-border p-3 overflow-auto max-h-60">
+                        {formatJson(after)}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       )}
 

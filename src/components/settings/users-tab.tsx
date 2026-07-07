@@ -56,6 +56,10 @@ export function UsersTab({ orgId, permissions, isPlatformAdmin }: UsersTabProps)
   const [profileFlags, setProfileFlags] = useState<Set<string>>(new Set());
   const [overrides, setOverrides] = useState<Record<string, boolean>>({});
   const [loadingOverrides, setLoadingOverrides] = useState(false);
+  // Permission inheritance: flags the parent (company/reseller cap) permits.
+  // When caps are configured, employees cannot be granted flags outside them.
+  const [cappedFlags, setCappedFlags] = useState<Set<string>>(new Set());
+  const [capsActive, setCapsActive] = useState(false);
 
   const fetchMembers = useCallback(async () => {
     const supabase = createClient();
@@ -186,6 +190,16 @@ export function UsersTab({ orgId, permissions, isPlatformAdmin }: UsersTabProps)
       .select("flag_id, granted")
       .eq("membership_id", member.id);
 
+    // Fetch the org's permission caps (set by the parent reseller / super admin).
+    // When any cap rows exist, they define the ceiling for this company's users.
+    const { data: caps } = await supabase
+      .from("reseller_permission_caps")
+      .select("flag_id")
+      .eq("organization_id", orgId);
+
+    setCapsActive((caps ?? []).length > 0);
+    setCappedFlags(new Set((caps ?? []).map((c: any) => c.flag_id)));
+
     setAllFlags(flags ?? []);
     setProfileFlags(new Set((pFlags ?? []).map((f: any) => f.flag_id)));
 
@@ -231,7 +245,14 @@ export function UsersTab({ orgId, permissions, isPlatformAdmin }: UsersTabProps)
     }
   }
 
+  // A flag is "capped" (uneditable) when the org has permission caps configured
+  // and this flag falls outside them. Platform admins are never capped.
+  function isFlagCapped(flagId: string): boolean {
+    return capsActive && !isPlatformAdmin && !cappedFlags.has(flagId);
+  }
+
   function toggleOverride(flagId: string, profileHasFlag: boolean) {
+    if (isFlagCapped(flagId)) return;
     setOverrides((prev) => {
       const next = { ...prev };
       if (flagId in next) {
@@ -486,17 +507,35 @@ export function UsersTab({ orgId, permissions, isPlatformAdmin }: UsersTabProps)
                       {flags.map((flag: any) => {
                         const fromProfile = profileFlags.has(flag.id);
                         const hasOverride = flag.id in overrides;
-                        const effectiveGrant = hasOverride ? overrides[flag.id] : fromProfile;
+                        const capped = isFlagCapped(flag.id);
+                        const effectiveGrant = capped
+                          ? false
+                          : hasOverride
+                          ? overrides[flag.id]
+                          : fromProfile;
 
                         return (
-                          <label key={flag.id} className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                            hasOverride ? "bg-purple-50" : "hover:bg-surface-hover"
-                          }`}>
+                          <label
+                            key={flag.id}
+                            className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
+                              capped
+                                ? "opacity-50 cursor-not-allowed"
+                                : hasOverride
+                                ? "bg-purple-50 cursor-pointer"
+                                : "hover:bg-surface-hover cursor-pointer"
+                            }`}
+                            title={
+                              capped
+                                ? "This permission exceeds the organization's cap and cannot be granted"
+                                : undefined
+                            }
+                          >
                             <input
                               type="checkbox"
                               checked={effectiveGrant}
+                              disabled={capped}
                               onChange={() => toggleOverride(flag.id, fromProfile)}
-                              className="w-4 h-4 text-brand border-border rounded focus:ring-brand"
+                              className="w-4 h-4 text-brand border-border rounded focus:ring-brand disabled:cursor-not-allowed"
                             />
                             <div className="flex-1 min-w-0">
                               <span className="text-sm text-text">{flag.display_name}</span>
@@ -504,10 +543,13 @@ export function UsersTab({ orgId, permissions, isPlatformAdmin }: UsersTabProps)
                                 <span className="text-xs text-text-muted ml-2">{flag.description}</span>
                               )}
                             </div>
-                            {hasOverride && (
+                            {capped && (
+                              <span className="text-xs font-medium text-amber-600 px-2 py-0.5 bg-amber-100 rounded-full">Capped</span>
+                            )}
+                            {!capped && hasOverride && (
                               <span className="text-xs font-medium text-purple-600 px-2 py-0.5 bg-purple-100 rounded-full">Override</span>
                             )}
-                            {fromProfile && !hasOverride && (
+                            {!capped && fromProfile && !hasOverride && (
                               <span className="text-xs text-text-muted">From profile</span>
                             )}
                           </label>
