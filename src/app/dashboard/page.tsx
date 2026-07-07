@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardMap } from "@/components/map/dashboard-map";
-import type { MapSite, SiteHealth } from "@/components/map/map-types";
+import { getDashboardMapData } from "@/app/actions/dashboard";
 
 async function getStats(supabase: Awaited<ReturnType<typeof createClient>>) {
   const [meters, gateways, alerts, sites, members, org] = await Promise.all([
@@ -55,75 +55,13 @@ async function getRecentAudit(
   return data ?? [];
 }
 
-function formatAddress(address: any): string {
-  if (!address || typeof address !== "object") return "";
-  return [address.street, address.city, address.province, address.country]
-    .filter(Boolean)
-    .join(", ");
-}
-
-async function getMapSites(
-  supabase: Awaited<ReturnType<typeof createClient>>
-): Promise<MapSite[]> {
-  const { data: sites } = await supabase
-    .from("sites")
-    .select("id, name, code, address, latitude, longitude, status")
-    .order("name");
-
-  if (!sites || sites.length === 0) return [];
-
-  const siteIds = sites.map((s: any) => s.id);
-
-  const [metersRes, gatewaysRes, alertsRes] = await Promise.all([
-    supabase.from("meters").select("site_id").in("site_id", siteIds),
-    supabase.from("gateways").select("site_id, status").in("site_id", siteIds),
-    // Alerts may or may not carry a site_id; tolerate its absence.
-    supabase
-      .from("alerts")
-      .select("site_id, severity, status")
-      .eq("status", "triggered")
-      .in("site_id", siteIds),
-  ]);
-
-  const meters = metersRes.data ?? [];
-  const gateways = gatewaysRes.data ?? [];
-  const alerts = alertsRes.error ? [] : alertsRes.data ?? [];
-
-  return sites.map((site: any): MapSite => {
-    const meterCount = meters.filter((m: any) => m.site_id === site.id).length;
-    const siteGateways = gateways.filter((g: any) => g.site_id === site.id);
-    const siteAlerts = alerts.filter((a: any) => a.site_id === site.id);
-
-    const hasCritical = siteAlerts.some(
-      (a: any) => a.severity === "critical" || a.severity === "high"
-    );
-    const hasWarning =
-      siteAlerts.length > 0 ||
-      site.status === "inactive" ||
-      siteGateways.some((g: any) => g.status === "offline");
-
-    const health: SiteHealth = hasCritical ? "critical" : hasWarning ? "warning" : "ok";
-
-    return {
-      id: site.id,
-      name: site.name,
-      code: site.code,
-      address: formatAddress(site.address),
-      latitude: site.latitude != null ? Number(site.latitude) : null,
-      longitude: site.longitude != null ? Number(site.longitude) : null,
-      meterCount,
-      health,
-    };
-  });
-}
-
 export default async function DashboardPage() {
   const supabase = await createClient();
   const [stats, recentAlerts, recentAudit, mapSites] = await Promise.all([
     getStats(supabase),
     getRecentAlerts(supabase),
     getRecentAudit(supabase),
-    getMapSites(supabase),
+    getDashboardMapData(),
   ]);
 
   const cards = [

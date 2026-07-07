@@ -45,23 +45,36 @@ export async function writeAudit(
   supabase: SupabaseServerClient,
   entry: AuditEntry
 ): Promise<void> {
-  const ip = await resolveClientIp();
-
   // An audit write must never break the primary mutation, which has already
-  // been authorized and applied. Any failure is intentionally non-fatal.
-  await supabase.from("audit_logs").insert({
-    organization_id: entry.organizationId,
-    actor_user_id: entry.actorUserId,
-    actor_type: "user",
-    action: entry.action,
-    entity_type: entry.entityType,
-    entity_id: entry.entityId,
-    ip_address: ip,
-    old_value: entry.oldValue ?? null,
-    new_value: entry.newValue ?? null,
-    details: {
+  // been authorized and applied — so failures are non-fatal. But they MUST be
+  // visible in server logs, not swallowed silently.
+  try {
+    const ip = await resolveClientIp();
+
+    const { error } = await supabase.from("audit_logs").insert({
+      organization_id: entry.organizationId,
+      actor_user_id: entry.actorUserId,
+      actor_type: "user",
+      action: entry.action,
+      entity_type: entry.entityType,
+      entity_id: entry.entityId,
+      ip_address: ip,
       old_value: entry.oldValue ?? null,
       new_value: entry.newValue ?? null,
-    },
-  });
+      details: {
+        old_value: entry.oldValue ?? null,
+        new_value: entry.newValue ?? null,
+      },
+    });
+
+    if (error) {
+      console.error(
+        `[audit] failed to record ${entry.action} on ${entry.entityType}/${entry.entityId}: ${error.message}`
+      );
+    }
+  } catch (err: any) {
+    console.error(
+      `[audit] unexpected error recording ${entry.action} on ${entry.entityType}/${entry.entityId}: ${err?.message ?? err}`
+    );
+  }
 }

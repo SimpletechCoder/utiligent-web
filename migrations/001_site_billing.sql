@@ -267,4 +267,33 @@ values
   ('org.reseller.view',   'org.reseller.view',   'organizations', 'View Reseller Accounts', 'View all reseller organizations (platform)',    true)
 on conflict (id) do nothing;
 
+-- ----------------------------------------------------------------------------
+-- 7. Enum CHECK constraints for status/role columns (mirrors src/lib/types.ts).
+--    Added idempotently. For the pre-existing sites/memberships tables the
+--    constraints are NOT VALID so the migration never fails on legacy rows
+--    (new/updated rows are still validated); run `VALIDATE CONSTRAINT` after
+--    backfilling if you want them enforced retroactively. site_memberships is
+--    created in this migration, so its constraint is validated immediately.
+-- ----------------------------------------------------------------------------
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'sites_status_check') then
+    alter table app.sites
+      add constraint sites_status_check
+      check (status in ('active', 'inactive', 'pending', 'suspended')) not valid;
+  end if;
+
+  if not exists (select 1 from pg_constraint where conname = 'memberships_role_check') then
+    alter table app.memberships
+      add constraint memberships_role_check
+      check (role in ('org_admin', 'site_manager', 'viewer', 'tenant')) not valid;
+  end if;
+
+  if not exists (select 1 from pg_constraint where conname = 'site_memberships_role_check') then
+    alter table app.site_memberships
+      add constraint site_memberships_role_check
+      check (role in ('site_manager', 'viewer', 'tenant'));
+  end if;
+end $$;
+
 commit;

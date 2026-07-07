@@ -51,7 +51,7 @@ export async function createGateway(
       return { success: false, error: "A gateway profile is required" };
     }
 
-    if (!(await userHasPermission("gateway.add"))) {
+    if (!(await userHasPermission("gateway.add", input.organizationId))) {
       return {
         success: false,
         error: "You do not have permission to add gateways",

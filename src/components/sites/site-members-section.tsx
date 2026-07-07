@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { assignUserToSite, removeSiteMembership } from "@/app/actions/sites";
+import { SITE_MEMBER_ROLES, type SiteMemberRole } from "@/lib/types";
 
 export interface SiteMemberRow {
   id: string;
@@ -22,8 +23,6 @@ interface SiteMembersSectionProps {
   orgMembers: OrgMemberOption[];
 }
 
-const ROLE_OPTIONS = ["viewer", "site_manager", "tenant"];
-
 export function SiteMembersSection({
   siteId,
   canManage,
@@ -32,7 +31,7 @@ export function SiteMembersSection({
 }: SiteMembersSectionProps) {
   const router = useRouter();
   const [selectedUser, setSelectedUser] = useState("");
-  const [selectedRole, setSelectedRole] = useState("viewer");
+  const [selectedRole, setSelectedRole] = useState<SiteMemberRole>("viewer");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -145,10 +144,10 @@ export function SiteMembersSection({
               </label>
               <select
                 value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
+                onChange={(e) => setSelectedRole(e.target.value as SiteMemberRole)}
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface text-text focus:outline-none focus:ring-2 focus:ring-brand capitalize"
               >
-                {ROLE_OPTIONS.map((r) => (
+                {SITE_MEMBER_ROLES.map((r) => (
                   <option key={r} value={r}>
                     {r.replace("_", " ")}
                   </option>

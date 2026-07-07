@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { userHasPermission } from "@/lib/permissions";
 import { writeAudit } from "@/lib/audit";
+import type { SiteStatus, SiteMemberRole } from "@/lib/types";
 
 interface SiteAddress {
   street?: string;
@@ -19,7 +20,7 @@ export interface SiteInput {
   latitude?: number | null;
   longitude?: number | null;
   timezone?: string | null;
-  status?: string;
+  status?: SiteStatus;
 }
 
 interface SiteResult {
@@ -46,7 +47,7 @@ async function authorizeOrgAction(
 
   if (!user) return { ok: false, error: "Not authenticated" };
 
-  if (!(await userHasPermission(flag))) {
+  if (!(await userHasPermission(flag, organizationId))) {
     return { ok: false, error: "You do not have permission to perform this action" };
   }
 
@@ -198,7 +199,7 @@ export async function updateSite(
 export async function assignUserToSite(
   siteId: string,
   userId: string,
-  role: string = "viewer"
+  role: SiteMemberRole = "viewer"
 ): Promise<{ success: boolean; error?: string }> {
   try {
     if (!siteId || !userId) return { success: false, error: "Site and user are required" };

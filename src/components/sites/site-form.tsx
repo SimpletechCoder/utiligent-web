@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSite, updateSite, type SiteInput } from "@/app/actions/sites";
+import { SITE_STATUSES, type SiteStatus } from "@/lib/types";
 
 export interface SiteFormValues {
   id?: string;
@@ -58,7 +59,7 @@ function toInput(v: SiteFormValues): SiteInput {
     latitude: v.latitude.trim() === "" ? null : Number(v.latitude),
     longitude: v.longitude.trim() === "" ? null : Number(v.longitude),
     timezone: v.timezone,
-    status: v.status,
+    status: v.status as SiteStatus,
   };
 }
 
@@ -253,8 +254,11 @@ export function SiteFormModal({
                 onChange={(e) => set("status", e.target.value)}
                 className={inputClass}
               >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                {SITE_STATUSES.map((s) => (
+                  <option key={s} value={s} className="capitalize">
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

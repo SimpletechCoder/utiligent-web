@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { userHasPermission } from "@/lib/permissions";
+import { userHasPermission, getCurrentOrgId } from "@/lib/permissions";
 
 async function getGateways(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data, error } = await supabase
@@ -30,9 +30,10 @@ function timeAgo(dateStr: string | null): string {
 
 export default async function GatewaysPage() {
   const supabase = await createClient();
+  const orgId = await getCurrentOrgId();
   const [gateways, canAdd] = await Promise.all([
     getGateways(supabase),
-    userHasPermission("gateway.add"),
+    orgId ? userHasPermission("gateway.add", orgId) : Promise.resolve(false),
   ]);
 
   const statusStyles: Record<string, { dot: string; bg: string; text: string }> = {

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { saveResellerCaps } from '@/app/actions/permissions';
 
 interface Organization {
   id: string;
@@ -258,28 +259,11 @@ export function ResellerTab() {
     try {
       setSavingCaps(true);
       setError(null);
-      const supabase = createClient();
 
-      // Delete all existing caps for this org
-      const { error: deleteError } = await supabase
-        .from('reseller_permission_caps')
-        .delete()
-        .eq('organization_id', expandedOrgId);
-
-      if (deleteError) throw deleteError;
-
-      // Insert new caps
-      if (selectedCapFlags.length > 0) {
-        const capsToInsert = selectedCapFlags.map((flagId) => ({
-          organization_id: expandedOrgId,
-          flag_id: flagId,
-        }));
-
-        const { error: insertError } = await supabase
-          .from('reseller_permission_caps')
-          .insert(capsToInsert);
-
-        if (insertError) throw insertError;
+      // Route through the server action (platform-admin authorized + audited).
+      const result = await saveResellerCaps(expandedOrgId, selectedCapFlags);
+      if (!result.success) {
+        throw new Error(result.error ?? 'Failed to save permission caps');
       }
 
       setSuccess('Permission caps updated successfully');

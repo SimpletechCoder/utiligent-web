@@ -16,7 +16,7 @@ async function getGateway(
     .from("gateways")
     .select(
       `
-      id, name, serial_number, firmware_version, status,
+      id, name, serial_number, firmware_version, status, organization_id,
       last_seen_at, last_heartbeat_at, provisioned_at,
       api_key, signing_key, metadata,
       site_id, sites(id, name),
@@ -95,15 +95,17 @@ export default async function GatewayDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [gateway, canEdit, canDelete] = await Promise.all([
-    getGateway(supabase, id),
-    userHasPermission("gateway.edit"),
-    userHasPermission("gateway.delete"),
-  ]);
+  const gateway = await getGateway(supabase, id);
 
   if (!gateway) {
     notFound();
   }
+
+  // Scope edit/delete permission checks to the org that owns this gateway.
+  const [canEdit, canDelete] = await Promise.all([
+    userHasPermission("gateway.edit", gateway.organization_id),
+    userHasPermission("gateway.delete", gateway.organization_id),
+  ]);
 
   const [setupInstructions, linkedMeters] = await Promise.all([
     gateway.gateway_profile_id

@@ -55,10 +55,12 @@ async function getSiteCounts(supabase: Awaited<ReturnType<typeof createClient>>,
 
 export default async function SitesPage() {
   const supabase = await createClient();
-  const [sites, canAdd, organizationId] = await Promise.all([
+  const organizationId = await getOrganizationId(supabase);
+  const [sites, canAdd] = await Promise.all([
     getSites(supabase),
-    userHasPermission("site.add"),
-    getOrganizationId(supabase),
+    organizationId
+      ? userHasPermission("site.add", organizationId)
+      : Promise.resolve(false),
   ]);
   const counts = await getSiteCounts(
     supabase,

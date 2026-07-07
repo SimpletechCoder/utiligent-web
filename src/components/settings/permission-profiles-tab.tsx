@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { saveProfileFlags } from '@/app/actions/permissions';
+import {
+  saveProfileFlags,
+  createProfile,
+  updateProfileMeta,
+  deleteProfile,
+} from '@/app/actions/permissions';
 
 interface PermissionProfile {
   id: string;
@@ -132,35 +137,22 @@ export function PermissionProfilesTab({
   const handleCreateProfile = async () => {
     try {
       setError(null);
-      const supabase = createClient();
 
       if (!createFormData.name.trim()) {
         setError('Profile name is required');
         return;
       }
 
-      // Create profile
-      const { data: newProfile, error: createError } = await supabase
-        .from('permission_profiles')
-        .insert({
-          organization_id: orgId,
-          name: createFormData.name,
-          description: createFormData.description,
-          is_system: false,
-        })
-        .select()
-        .single();
-
-      if (createError) throw createError;
-
-      // Persist flag associations through the server action, which enforces the
-      // org's permission caps and platform-only rules on the write path.
-      const flagResult = await saveProfileFlags(
-        newProfile.id,
+      // Create through the server action: it authorizes, enforces permission
+      // caps / platform-only rules, and writes an audit entry.
+      const result = await createProfile(
+        orgId,
+        createFormData.name,
+        createFormData.description || null,
         Array.from(createFormData.selectedFlags)
       );
-      if (!flagResult.success) {
-        throw new Error(flagResult.error ?? 'Failed to save profile permissions');
+      if (!result.success) {
+        throw new Error(result.error ?? 'Failed to create profile');
       }
 
       setSuccess('Profile created successfully');
@@ -177,29 +169,23 @@ export function PermissionProfilesTab({
 
     try {
       setError(null);
-      const supabase = createClient();
 
       if (!editingProfile.name.trim()) {
         setError('Profile name is required');
         return;
       }
 
-      // Update profile
-      const { error: updateError } = await supabase
-        .from('permission_profiles')
-        .update({
-          name: editingProfile.name,
-          description: editingProfile.description,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', editingProfile.id);
+      // Name/description via updateProfileMeta; flags via saveProfileFlags —
+      // both server actions authorize and enforce caps server-side.
+      const metaResult = await updateProfileMeta(
+        editingProfile.id,
+        editingProfile.name,
+        editingProfile.description || null
+      );
+      if (!metaResult.success) {
+        throw new Error(metaResult.error ?? 'Failed to update profile');
+      }
 
-      if (updateError) throw updateError;
-
-      // Re-sync flag associations through the server action. `editingProfile.flags`
-      // already reflects the desired end state (the modal mutates it as the admin
-      // toggles flags); the action replaces the whole set and enforces the org's
-      // permission caps / platform-only rules server-side.
       const flagResult = await saveProfileFlags(
         editingProfile.id,
         editingProfile.flags.map((f) => f.id)
@@ -224,23 +210,11 @@ export function PermissionProfilesTab({
 
     try {
       setError(null);
-      const supabase = createClient();
 
-      // Delete flag associations
-      const { error: flagError } = await supabase
-        .from('permission_profile_flags')
-        .delete()
-        .eq('profile_id', profile.id);
-
-      if (flagError) throw flagError;
-
-      // Delete profile
-      const { error: deleteError } = await supabase
-        .from('permission_profiles')
-        .delete()
-        .eq('id', profile.id);
-
-      if (deleteError) throw deleteError;
+      const result = await deleteProfile(profile.id);
+      if (!result.success) {
+        throw new Error(result.error ?? 'Failed to delete profile');
+      }
 
       setSuccess('Profile deleted successfully');
       await fetchData();

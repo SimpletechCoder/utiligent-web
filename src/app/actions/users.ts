@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { userHasPermission } from "@/lib/permissions";
 
 interface InviteUserResult {
@@ -28,7 +29,7 @@ async function authorizeOrgAction(
 
   if (!user) return { ok: false, error: "Not authenticated" };
 
-  const hasFlag = await userHasPermission(flag);
+  const hasFlag = await userHasPermission(flag, organizationId);
   if (!hasFlag) {
     return { ok: false, error: "You do not have permission to perform this action" };
   }
@@ -86,11 +87,12 @@ export async function inviteUser(
 
     const supabase = await createClient();
 
-    // Check service role key availability
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-    if (!serviceKey || !supabaseUrl) {
+    // Admin (service-role) client for the auth invite. createAdminClient throws
+    // when SUPABASE_SERVICE_ROLE_KEY is absent.
+    let admin: ReturnType<typeof createAdminClient>;
+    try {
+      admin = createAdminClient();
+    } catch {
       return {
         success: false,
         error:
@@ -98,70 +100,30 @@ export async function inviteUser(
       };
     }
 
-    // Use admin API to create user or find existing
-    // We use fetch directly to avoid importing the admin client in case it throws
+    // Send a proper invitation email with a magic link so the user sets their
+    // OWN password. We never generate a temporary password or auto-confirm the
+    // email — the invite link handles confirmation and password creation.
     let userId: string | null = null;
+    const { data: invited, error: inviteErr } =
+      await admin.auth.admin.inviteUserByEmail(email, {
+        data: { invited_by: caller.id },
+      });
 
-    // Try to create the user with a temporary password
-    const tempPassword =
-      "Temp" +
-      Math.random().toString(36).slice(2, 10) +
-      "!" +
-      Math.floor(Math.random() * 100);
-
-    const createRes = await fetch(
-      `${supabaseUrl}/auth/v1/admin/users`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${serviceKey}`,
-          apikey: serviceKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password: tempPassword,
-          email_confirm: true,
-          user_metadata: { invited_by: caller.id },
-        }),
-      }
-    );
-
-    if (createRes.ok) {
-      const created = await createRes.json();
-      userId = created.id;
+    if (!inviteErr && invited?.user) {
+      userId = invited.user.id;
     } else {
-      const err = await createRes.json();
-      // User might already exist
-      if (
-        err.msg?.includes("already been registered") ||
-        err.message?.includes("already been registered")
-      ) {
-        // Look up existing user by email
-        const listRes = await fetch(
-          `${supabaseUrl}/auth/v1/admin/users?filter=${encodeURIComponent(email)}`,
-          {
-            headers: {
-              Authorization: `Bearer ${serviceKey}`,
-              apikey: serviceKey,
-            },
-          }
-        );
-        if (listRes.ok) {
-          const list = await listRes.json();
-          const found = (list.users ?? []).find(
-            (u: any) => u.email === email
-          );
-          if (found) {
-            userId = found.id;
-          }
-        }
-      }
-
-      if (!userId) {
+      // Most likely the address is already registered — look them up and just
+      // attach the membership (they already have an account & password).
+      const { data: list } = await admin.auth.admin.listUsers();
+      const found = (list?.users ?? []).find(
+        (u) => u.email?.toLowerCase() === email.toLowerCase()
+      );
+      if (found) {
+        userId = found.id;
+      } else {
         return {
           success: false,
-          error: err.msg || err.message || "Failed to create user",
+          error: inviteErr?.message ?? "Failed to invite user",
         };
       }
     }

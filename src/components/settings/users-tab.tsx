@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { inviteUser } from "@/app/actions/users";
+import { inviteUser, updateMember, removeMember } from "@/app/actions/users";
 import { saveUserOverrides } from "@/app/actions/permissions";
 
 interface UsersTabProps {
@@ -129,16 +129,12 @@ export function UsersTab({ orgId, permissions, isPlatformAdmin }: UsersTabProps)
     if (!editingMember) return;
     setMessage(null);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("memberships")
-        .update({
-          role: editRole,
-          permission_profile_id: editProfile || null,
-        })
-        .eq("id", editingMember.id);
-
-      if (error) throw error;
+      // Route through the server action so authorization + org scoping apply.
+      const result = await updateMember(editingMember.id, editRole, editProfile || null);
+      if (!result.success) {
+        setMessage({ type: "error", text: result.error ?? "Failed to update member" });
+        return;
+      }
       setMessage({ type: "success", text: "Member updated successfully" });
       setEditingMember(null);
       fetchMembers();
@@ -151,13 +147,11 @@ export function UsersTab({ orgId, permissions, isPlatformAdmin }: UsersTabProps)
     if (!confirm("Are you sure you want to remove this member?")) return;
     setMessage(null);
     try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from("memberships")
-        .update({ status: "inactive" })
-        .eq("id", memberId);
-
-      if (error) throw error;
+      const result = await removeMember(memberId);
+      if (!result.success) {
+        setMessage({ type: "error", text: result.error ?? "Failed to remove member" });
+        return;
+      }
       setMessage({ type: "success", text: "Member removed" });
       fetchMembers();
     } catch (err: any) {

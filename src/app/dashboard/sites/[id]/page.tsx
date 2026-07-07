@@ -37,22 +37,25 @@ export default async function SiteDetailPage({ params }: SiteDetailPageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const [site, canEdit, canViewBilling, canManageBilling, canManageMembers] =
-    await Promise.all([
-      getSite(supabase, id),
-      userHasPermission("site.edit"),
-      userHasPermission("site.billing.view"),
-      userHasPermission("site.billing.manage"),
-      userHasPermission("site.member.manage"),
-    ]);
-
+  // Fetch the site first so every permission check is scoped to the org that
+  // actually owns this site (a multi-org user's other memberships are irrelevant).
+  const site = await getSite(supabase, id);
   if (!site) notFound();
+
+  const orgId = site.organization_id;
+  const [canEdit, canViewBilling, canManageBilling, canManageMembers] =
+    await Promise.all([
+      userHasPermission("site.edit", orgId),
+      userHasPermission("site.billing.view", orgId),
+      userHasPermission("site.billing.manage", orgId),
+      userHasPermission("site.member.manage", orgId),
+    ]);
 
   // Billing is commercially sensitive — only render it for users who may view it
   // (managers may always manage/view). This mirrors the tightened RLS SELECT.
   const showBilling = canViewBilling || canManageBilling;
 
-  const [buildingsRes, metersRes, gatewaysRes, billingRes, siteMembersRes, orgMembersRes] =
+  const [buildingsRes, metersRes, gatewaysRes, siteMembersRes, orgMembersRes] =
     await Promise.all([
       supabase.from("buildings").select("id, name, site_id").eq("site_id", id).order("name"),
       supabase
@@ -66,11 +69,6 @@ export default async function SiteDetailPage({ params }: SiteDetailPageProps) {
         .eq("site_id", id)
         .order("name"),
       supabase
-        .from("site_billing_configs")
-        .select("items, currency")
-        .eq("site_id", id)
-        .maybeSingle(),
-      supabase
         .from("site_memberships")
         .select("id, user_id, role")
         .eq("site_id", id)
@@ -81,6 +79,15 @@ export default async function SiteDetailPage({ params }: SiteDetailPageProps) {
         .eq("organization_id", site.organization_id)
         .eq("status", "active"),
     ]);
+
+  // Only query billing data at all when the viewer is permitted to see it.
+  const billingRes = showBilling
+    ? await supabase
+        .from("site_billing_configs")
+        .select("items, currency")
+        .eq("site_id", id)
+        .maybeSingle()
+    : { data: null };
 
   const buildings = buildingsRes.data ?? [];
   const meters = metersRes.data ?? [];

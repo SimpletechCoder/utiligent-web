@@ -37,6 +37,41 @@ sections below):
 
 ---
 
+## Code-Review Hardening — Round 2
+
+A second review round fixed seven more findings:
+
+1. **Org-scoped permission resolution (CRITICAL)** — `getUserPermissions()` and
+   `userHasPermission()` now **require an `organizationId`** and resolve the
+   caller's *active* membership in that specific org. Previously they took the
+   first membership found, so a multi-org user could get the wrong org's
+   permissions. Every call site passes the target org (the org that owns the
+   site/gateway, or `getCurrentOrgId()` for "my-org" pages). → [§4](#4-server-action-api-reference), [§7](#7-permission-inheritance-model).
+2. **All membership/permission writes go through server actions (HIGH)** — the
+   Users, Permission-Profiles and Reseller settings tabs no longer write to
+   `memberships` / `permission_profiles` / `permission_profile_flags` /
+   `reseller_permission_caps` directly. New actions `createProfile`,
+   `updateProfileMeta`, `deleteProfile`, `saveResellerCaps` (plus existing
+   `updateMember`/`removeMember`) enforce authz, caps and audit. → [§4](#4-server-action-api-reference).
+3. **Secure invite flow (HIGH)** — `inviteUser` now calls
+   `admin.auth.admin.inviteUserByEmail()` (magic-link, user sets own password).
+   The temporary-password / `email_confirm: true` path is removed. → [§4](#4-server-action-api-reference).
+4. **Dashboard map perf (MEDIUM)** — new `getDashboardMapData()` server action
+   returns a lightweight summary via a **single query with embedded
+   `meters(count)` / `alerts(count)` aggregates** instead of fetching full
+   datasets. → [§4](#4-server-action-api-reference), [§8](#8-map-integration-details).
+5. **Typed enums + CHECK constraints (MEDIUM)** — `src/lib/types.ts` adds
+   `SiteStatus`, `MembershipRole`, `SiteMemberRole`; the migration adds matching
+   `CHECK` constraints on `sites.status`, `memberships.role`,
+   `site_memberships.role`. → [§3.8](#38-enum-check-constraints).
+6. **Audit failures logged (MEDIUM)** — `writeAudit` now `console.error`s on
+   failure (still non-fatal) so silent drops are visible in server logs.
+7. **No billing query without access (LOW)** — the site detail page checks
+   `site.billing.view` (or manage) **before** querying `site_billing_configs`.
+   → [§7](#7-permission-inheritance-model).
+
+---
+
 ## Table of Contents
 
 1. [Architecture Overview](#1-architecture-overview)
@@ -261,12 +296,33 @@ Because `permission_flags.id` is the flag string, new flags are inserted as rows
 | `site.member.manage` | sites | no |
 | `org.reseller.view` | organizations | **yes** |
 
+### 3.8 Enum CHECK constraints
+
+Idempotent `CHECK` constraints keep the DB in sync with the TypeScript unions in
+`src/lib/types.ts`:
+
+| Constraint | Column | Allowed values | Validation |
+|---|---|---|---|
+| `sites_status_check` | `sites.status` | active, inactive, pending, suspended | `NOT VALID` (legacy-safe) |
+| `memberships_role_check` | `memberships.role` | org_admin, site_manager, viewer, tenant | `NOT VALID` (legacy-safe) |
+| `site_memberships_role_check` | `site_memberships.role` | site_manager, viewer, tenant | validated (new table) |
+
+For the pre-existing `sites`/`memberships` tables the constraints are added
+`NOT VALID` so the migration can't fail on legacy rows — new/updated rows are
+still checked. Run `VALIDATE CONSTRAINT` after any backfill to enforce
+retroactively.
+
 ---
 
 ## 4. Server Action API Reference
 
 All actions are `"use server"`, return a discriminated `{ success, error? }`
 result (never throw across the boundary), and write an audit entry on success.
+
+> **Permission scoping (Round 2):** `userHasPermission(flag, organizationId)` and
+> `getUserPermissions(organizationId)` now require the org. Actions pass the org
+> that owns the resource (site/gateway/profile/membership); pages that are
+> inherently "my org" use `getCurrentOrgId()`.
 
 ### `sites.ts`
 
@@ -331,6 +387,28 @@ result (never throw across the boundary), and write an audit entry on success.
   allowed); granted flags must be within caps and non-platform-only for non-admins.
 - **Behaviour**: replaces the membership's overrides (delete-then-insert).
 - **Returns**: `{ success, error? }`. **Audit**: `permission.override.update`.
+
+#### `createProfile(organizationId, name, description, flagIds)` · `updateProfileMeta(profileId, name, description)` · `deleteProfile(profileId)`
+- **Permission**: `user.permission.override` in the profile's org (system
+  profiles are platform-admin only). `createProfile` also cap-validates the
+  initial flag set.
+- Replace the direct client-side `permission_profiles` writes the settings UI
+  used to do. **Returns**: `{ success, error?, profileId? }`.
+  **Audit**: `permission.profile.{create,update,delete}`.
+
+#### `saveResellerCaps(organizationId, flagIds)`
+- **Permission**: **platform admin only** (caps are the super-admin control point).
+- **Behaviour**: replaces the org's `reseller_permission_caps` (delete-then-insert).
+- **Returns**: `{ success, error? }`. **Audit**: `permission.caps.update`.
+
+### `dashboard.ts`
+
+#### `getDashboardMapData()`
+- Read-only server action returning `MapSite[]` for the dashboard map.
+- **One query** using PostgREST embedded aggregates
+  (`sites … meters(count), alerts(count)` filtered to triggered), with a
+  meters-only fallback if the `alerts` relationship isn't available. Health:
+  `critical` if any active alert, `warning` if the site isn't `active`, else `ok`.
 
 ### `admin.ts`
 
@@ -468,11 +546,24 @@ company cannot grant employees permissions beyond its own cap.
    Platform admins are never capped; with no cap rows, nothing is capped.
 
 2. **Server write path (review fix #4)** — the flag writes go through the
-   `permissions.ts` server actions (`saveProfileFlags`, `saveUserOverrides`),
-   which re-validate every *granted* flag against the org's caps (and reject
-   platform-only flags for non-admins) before persisting. This closes the gap
-   where a crafted request could bypass the greyed-out UI. Revocations are never
-   blocked. Platform admins bypass caps.
+   `permissions.ts` server actions (`saveProfileFlags`, `saveUserOverrides`,
+   `createProfile`, `updateProfileMeta`, `deleteProfile`), which re-validate
+   every *granted* flag against the org's caps (and reject platform-only flags
+   for non-admins) before persisting. This closes the gap where a crafted
+   request could bypass the greyed-out UI. Revocations are never blocked.
+   Platform admins bypass caps.
+
+**Org-scoped resolution (Round 2 fix #1):** effective permissions are always
+resolved against the caller's **active membership in a specific organization**
+(`getUserPermissions(orgId)`), never "the first membership found". A multi-org
+user viewing a site in org B is evaluated against their org-B membership, not
+org A. The permission-cap write checks in the actions above are likewise scoped
+to the profile/membership's own org.
+
+**Billing access (Round 2 fix #7):** the site detail page checks
+`site.billing.view` (or `site.billing.manage`) *before* it queries
+`site_billing_configs` — no billing data is fetched for users who can't see it,
+complementing the tightened RLS SELECT policy.
 
 ---
 
@@ -488,10 +579,13 @@ company cannot grant employees permissions beyond its own cap.
 - **Pins**: `L.divIcon` with inline HTML (colored circle) — avoids the missing
   default-marker-image problem and lets pin colour encode health:
   green `#16a34a` (OK), amber `#d97706` (warning/offline), red `#dc2626` (critical).
-- **Health derivation** (`getMapSites` in `dashboard/page.tsx`): per site,
-  `critical` if it has a triggered `critical`/`high` alert; else `warning` if it
-  has any triggered alert, is `inactive`, or has an offline gateway; else `ok`.
-  Alert→site linkage is best-effort (tolerates a missing `alerts.site_id`).
+- **Data source (Round 2 fix #4)**: the dashboard calls the
+  `getDashboardMapData()` server action, which returns the map summary from a
+  **single query** with embedded `meters(count)` / `alerts(count)` aggregates
+  (falling back to meters-only if the alerts relationship is absent) — instead
+  of fetching full meter/gateway/alert datasets and counting in memory.
+- **Health derivation**: `critical` if the site has any active (triggered)
+  alert, else `warning` if the site status isn't `active`, else `ok`.
 - **Interactions**: click a pin → popup (name, code, address, meter count, "View
   site →"); search the side panel and click a row → map flies to that site;
   sites without coordinates are listed but non-clickable.
@@ -560,9 +654,14 @@ npm run build   # Next.js 16.2.2 / Turbopack — verified passing
   the three new tables, the `audit_logs` columns, and the seeded flags.
 - **`middleware` → `proxy`**: the build warns `src/middleware.ts` uses a deprecated
   convention. Left untouched (pre-existing, out of scope); worth migrating separately.
-- **Alert→site health**: the `critical` pin tier relies on `alerts.site_id`. If
-  alerts link to sites only via meters/gateways in your schema, tighten
-  `getMapSites` once the linkage is confirmed.
+- **Alert→site health**: the active-alert count in `getDashboardMapData()` relies
+  on an `alerts → sites` relationship (embedded `alerts(count)` filtered to
+  triggered). If alerts link to sites only via meters/gateways in your schema,
+  the query falls back to meters-only (alert count 0) — tighten once the linkage
+  is confirmed.
+- **Invite email template**: the secure invite flow uses
+  `inviteUserByEmail`, so the Supabase **"Invite user" email template** and the
+  project **Site URL / redirect** must be configured for invitations to arrive.
 - **User emails**: assigned-users, audit and org views show truncated user IDs
   (same limitation as the existing Users tab — no client-side `auth.users` join).
   A server action to resolve emails would improve all of them.

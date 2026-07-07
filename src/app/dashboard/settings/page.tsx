@@ -34,10 +34,9 @@ async function getSettingsData(supabase: Awaited<ReturnType<typeof createClient>
 
 export default async function SettingsPage() {
   const supabase = await createClient();
-  const [{ user, membership, org, isPlatformAdmin }, permissions] = await Promise.all([
-    getSettingsData(supabase),
-    getUserPermissions(),
-  ]);
+  const { user, membership, org, isPlatformAdmin } = await getSettingsData(supabase);
+  // Permissions must be resolved against THIS org's membership.
+  const permissions = org?.id ? await getUserPermissions(org.id) : new Set<string>();
 
   return (
     <SettingsPanel

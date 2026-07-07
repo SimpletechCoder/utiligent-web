@@ -1,8 +1,9 @@
-import { userHasPermission } from "@/lib/permissions";
+import { userHasPermission, getCurrentOrgId } from "@/lib/permissions";
 import AuditLogClient from "@/components/audit-log-client";
 
 export default async function AuditPage() {
-  const canView = await userHasPermission("audit.view");
+  const orgId = await getCurrentOrgId();
+  const canView = orgId ? await userHasPermission("audit.view", orgId) : false;
 
   if (!canView) {
     return (

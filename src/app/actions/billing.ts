@@ -65,7 +65,7 @@ export async function saveSiteBillingConfig(
 
     if (!site) return { success: false, error: "Site not found" };
 
-    if (!(await userHasPermission("site.billing.manage"))) {
+    if (!(await userHasPermission("site.billing.manage", site.organization_id))) {
       return { success: false, error: "You do not have permission to manage billing" };
     }
 

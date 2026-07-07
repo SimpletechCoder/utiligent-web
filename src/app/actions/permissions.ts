@@ -117,15 +117,19 @@ export async function saveProfileFlags(
 
     const isAdmin = await isPlatformAdmin(supabase, user.id);
 
-    if (!isAdmin && !(await userHasPermission("user.permission.override"))) {
-      return { success: false, error: "You do not have permission to edit profiles" };
-    }
-
     if (profile.is_system && !isAdmin) {
       return { success: false, error: "System profiles can only be edited by platform admins" };
     }
 
-    if (profile.organization_id && !isAdmin) {
+    if (!isAdmin) {
+      // Non-admins may only edit org-scoped profiles, and the permission check
+      // is scoped to that profile's organization (not just any membership).
+      if (!profile.organization_id) {
+        return { success: false, error: "You do not have permission to edit this profile" };
+      }
+      if (!(await userHasPermission("user.permission.override", profile.organization_id))) {
+        return { success: false, error: "You do not have permission to edit profiles" };
+      }
       const { data: membership } = await supabase
         .from("memberships")
         .select("id")
@@ -213,7 +217,10 @@ export async function saveUserOverrides(
 
     const isAdmin = await isPlatformAdmin(supabase, user.id);
 
-    if (!isAdmin && !(await userHasPermission("user.permission.override"))) {
+    if (
+      !isAdmin &&
+      !(await userHasPermission("user.permission.override", membership.organization_id))
+    ) {
       return { success: false, error: "You do not have permission to override flags" };
     }
 
@@ -266,6 +273,259 @@ export async function saveUserOverrides(
       entityType: "membership",
       entityId: membershipId,
       newValue: { overrides },
+    });
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message ?? "Unexpected error" };
+  }
+}
+
+/** Authorize a profile-management action against the profile's own org. */
+async function authorizeProfileMgmt(
+  supabase: SupabaseServerClient,
+  userId: string,
+  organizationId: string | null,
+  isSystem: boolean
+): Promise<string | null> {
+  const isAdmin = await isPlatformAdmin(supabase, userId);
+  if (isAdmin) return null;
+  if (isSystem || !organizationId) {
+    return "This profile can only be managed by platform admins";
+  }
+  if (!(await userHasPermission("user.permission.override", organizationId))) {
+    return "You do not have permission to manage profiles";
+  }
+  const { data: membership } = await supabase
+    .from("memberships")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("organization_id", organizationId)
+    .eq("status", "active")
+    .maybeSingle();
+  if (!membership) return "You are not a member of this organization";
+  return null;
+}
+
+/**
+ * Create a permission profile with an initial flag set (authorized + audited).
+ * Flags are validated against the org's caps before insert.
+ */
+export async function createProfile(
+  organizationId: string,
+  name: string,
+  description: string | null,
+  flagIds: string[]
+): Promise<{ success: boolean; error?: string; profileId?: string }> {
+  try {
+    if (!organizationId) return { success: false, error: "Organization ID is required" };
+    if (!name?.trim()) return { success: false, error: "Profile name is required" };
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Not authenticated" };
+
+    const authError = await authorizeProfileMgmt(supabase, user.id, organizationId, false);
+    if (authError) return { success: false, error: authError };
+
+    const isAdmin = await isPlatformAdmin(supabase, user.id);
+    const capError = await validateGrantableFlags(supabase, flagIds, organizationId, isAdmin);
+    if (capError) return { success: false, error: capError };
+
+    const { data: profile, error } = await supabase
+      .from("permission_profiles")
+      .insert({
+        organization_id: organizationId,
+        name: name.trim(),
+        description: description ?? "",
+        is_system: false,
+      })
+      .select("id")
+      .single();
+    if (error) return { success: false, error: error.message };
+
+    const uniqueIds = Array.from(new Set(flagIds));
+    if (uniqueIds.length > 0) {
+      const { error: insErr } = await supabase
+        .from("permission_profile_flags")
+        .insert(uniqueIds.map((flagId) => ({ profile_id: profile.id, flag_id: flagId })));
+      if (insErr) return { success: false, error: insErr.message };
+    }
+
+    await writeAudit(supabase, {
+      organizationId,
+      actorUserId: user.id,
+      action: "permission.profile.create",
+      entityType: "permission_profile",
+      entityId: profile.id,
+      newValue: { name: name.trim(), flag_ids: uniqueIds },
+    });
+
+    return { success: true, profileId: profile.id };
+  } catch (err: any) {
+    return { success: false, error: err.message ?? "Unexpected error" };
+  }
+}
+
+/** Update a profile's name/description (flags go through saveProfileFlags). */
+export async function updateProfileMeta(
+  profileId: string,
+  name: string,
+  description: string | null
+): Promise<Result> {
+  try {
+    if (!profileId) return { success: false, error: "Profile ID is required" };
+    if (!name?.trim()) return { success: false, error: "Profile name is required" };
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Not authenticated" };
+
+    const { data: profile } = await supabase
+      .from("permission_profiles")
+      .select("id, organization_id, is_system, name, description")
+      .eq("id", profileId)
+      .maybeSingle();
+    if (!profile) return { success: false, error: "Profile not found" };
+
+    const authError = await authorizeProfileMgmt(
+      supabase,
+      user.id,
+      profile.organization_id,
+      profile.is_system
+    );
+    if (authError) return { success: false, error: authError };
+
+    const { error } = await supabase
+      .from("permission_profiles")
+      .update({
+        name: name.trim(),
+        description: description ?? "",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", profileId);
+    if (error) return { success: false, error: error.message };
+
+    if (profile.organization_id) {
+      await writeAudit(supabase, {
+        organizationId: profile.organization_id,
+        actorUserId: user.id,
+        action: "permission.profile.update",
+        entityType: "permission_profile",
+        entityId: profileId,
+        oldValue: { name: profile.name, description: profile.description },
+        newValue: { name: name.trim(), description },
+      });
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message ?? "Unexpected error" };
+  }
+}
+
+/** Delete a permission profile and its flag associations. */
+export async function deleteProfile(profileId: string): Promise<Result> {
+  try {
+    if (!profileId) return { success: false, error: "Profile ID is required" };
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Not authenticated" };
+
+    const { data: profile } = await supabase
+      .from("permission_profiles")
+      .select("id, organization_id, is_system, name")
+      .eq("id", profileId)
+      .maybeSingle();
+    if (!profile) return { success: false, error: "Profile not found" };
+
+    const authError = await authorizeProfileMgmt(
+      supabase,
+      user.id,
+      profile.organization_id,
+      profile.is_system
+    );
+    if (authError) return { success: false, error: authError };
+
+    const { error: flagErr } = await supabase
+      .from("permission_profile_flags")
+      .delete()
+      .eq("profile_id", profileId);
+    if (flagErr) return { success: false, error: flagErr.message };
+
+    const { error } = await supabase
+      .from("permission_profiles")
+      .delete()
+      .eq("id", profileId);
+    if (error) return { success: false, error: error.message };
+
+    if (profile.organization_id) {
+      await writeAudit(supabase, {
+        organizationId: profile.organization_id,
+        actorUserId: user.id,
+        action: "permission.profile.delete",
+        entityType: "permission_profile",
+        entityId: profileId,
+        oldValue: { name: profile.name },
+      });
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message ?? "Unexpected error" };
+  }
+}
+
+/**
+ * Replace a reseller org's permission caps (the ceiling its child users may be
+ * granted). Platform-admin only, since caps are the super-admin control point.
+ */
+export async function saveResellerCaps(
+  organizationId: string,
+  flagIds: string[]
+): Promise<Result> {
+  try {
+    if (!organizationId) return { success: false, error: "Organization ID is required" };
+
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "Not authenticated" };
+
+    if (!(await isPlatformAdmin(supabase, user.id))) {
+      return { success: false, error: "Only platform admins can set permission caps" };
+    }
+
+    const uniqueIds = Array.from(new Set(flagIds));
+
+    const { error: delErr } = await supabase
+      .from("reseller_permission_caps")
+      .delete()
+      .eq("organization_id", organizationId);
+    if (delErr) return { success: false, error: delErr.message };
+
+    if (uniqueIds.length > 0) {
+      const { error: insErr } = await supabase
+        .from("reseller_permission_caps")
+        .insert(uniqueIds.map((flagId) => ({ organization_id: organizationId, flag_id: flagId })));
+      if (insErr) return { success: false, error: insErr.message };
+    }
+
+    await writeAudit(supabase, {
+      organizationId,
+      actorUserId: user.id,
+      action: "permission.caps.update",
+      entityType: "organization",
+      entityId: organizationId,
+      newValue: { flag_ids: uniqueIds },
     });
 
     return { success: true };
